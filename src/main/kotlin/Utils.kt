@@ -12,4 +12,4 @@ fun loadConfig(): ConfigDto {
     }
 }
 
-data class ConfigDto(val basic: String, val repos: List<String>)
+data class ConfigDto(val basic: String, val repo: String)
