@@ -17,7 +17,7 @@ const val issuesEndpoint = "/issues"
 const val mergesEndpoint = "/merges"
 const val mergeEndpoint = "/merge"
 
-const val LABEL = "Test"
+const val LABEL = "Automerge"
 
 val config = loadConfig()
 val basic = config.basic
@@ -31,16 +31,18 @@ val mapper = jacksonObjectMapper()
 
 //TODO Re-implement using coroutines so we can hit multiple repositories at once
 fun main(args: Array<String>) {
-//    while(true) {
+    while(true) {
         val pull = getOldestLabeledRequest()
         val reviewStatus: MergeState? = pull?.let { getReviewStatus(pull) }
 
         reviewStatus?.let {
+            println("Status is $reviewStatus")
             if (reviewStatus == MergeState.BEHIND) updateBranch(pull)
             if (reviewStatus == MergeState.CLEAN) squashMerge(pull)
+            if (reviewStatus == MergeState.BAD) deleteLabel(pull)
         }
-//        Thread.sleep(60_000)
-//    }
+        Thread.sleep(60_000)
+    }
 }
 
 fun getOldestLabeledRequest(): Pull? {
@@ -111,6 +113,7 @@ fun getReviewStatus(pull: Pull): MergeState {
 
 fun determineMergeState(mergeStatus: MergeStatus): MergeState {
     if (!mergeStatus.mergeable) return MergeState.BAD
+    println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
     return when (mergeStatus.mergeableState) {
         "behind" -> MergeState.BEHIND
         "clean" -> MergeState.CLEAN
