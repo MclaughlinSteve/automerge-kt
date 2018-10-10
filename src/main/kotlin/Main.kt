@@ -38,8 +38,9 @@ fun main(args: Array<String>) {
         reviewStatus?.let {
             println("Status is $reviewStatus")
             when (reviewStatus) {
-                MergeState.BEHIND -> updateBranch(pull)
                 MergeState.CLEAN -> squashMerge(pull)
+                MergeState.BEHIND -> updateBranch(pull)
+                MergeState.BLOCKED -> deleteLabel(pull)
                 MergeState.BAD -> deleteLabel(pull)
             }
         }
@@ -68,6 +69,7 @@ fun squashMerge(pull: Pull) {
     when (result) {
         is Result.Failure -> {
             println("Failed to squash merge $request")
+            deleteLabel(pull)
             logFailure(result)
         }
         is Result.Success -> {
@@ -114,12 +116,18 @@ fun getReviewStatus(pull: Pull): MergeState {
 }
 
 fun determineMergeState(mergeStatus: MergeStatus): MergeState {
-    if (!mergeStatus.mergeable) return MergeState.BAD
+    when (mergeStatus.mergeable) {
+        null -> return MergeState.WAITING
+        false -> return MergeState.BAD
+    }
     println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
+    //TODO Should be deal with unstable state, or just return bad in that case? Need to understand when this happens
     return when (mergeStatus.mergeableState) {
         "behind" -> MergeState.BEHIND
         "clean" -> MergeState.CLEAN
         "blocked" -> MergeState.BLOCKED
+        "has_hooks" -> MergeState.WAITING
+        "unknown" -> MergeState.WAITING
         else -> MergeState.BAD
     }
 }
@@ -139,12 +147,13 @@ fun deleteLabel(pull: Pull) {
 enum class MergeState {
     CLEAN,
     BEHIND,
-    BLOCKED,
+    BLOCKED, //TODO May be able to get rid of this and just use BAD. Need to understand when this happens
+    WAITING,
     BAD
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class MergeStatus(val number: Long, val mergeable: Boolean, @JsonProperty("mergeable_state") val mergeableState: String)
+data class MergeStatus(val number: Long, val mergeable: Boolean?, @JsonProperty("mergeable_state") val mergeableState: String)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Branch(val ref: String)
