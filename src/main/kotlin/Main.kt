@@ -23,7 +23,7 @@ val mapper = jacksonObjectMapper()
 //TODO Re-implement using coroutines so we can hit multiple repositories at once
 fun main(args: Array<String>) {
     val pull = getOldestLabeledRequest()
-    //if (pull != null) deleteLabel(pull)
+//    pull?.let { deleteLabel(it) }
 }
 
 fun getOldestLabeledRequest(): Pull? {
