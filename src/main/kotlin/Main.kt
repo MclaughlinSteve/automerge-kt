@@ -6,6 +6,7 @@ import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.httpDelete
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
 
 
@@ -13,34 +14,37 @@ const val DELIMITER = "/"
 const val pullsEndpoint = "/pulls"
 const val labelsEndpoint = "/labels"
 const val issuesEndpoint = "/issues"
-const val reviewsEndpoint = "/reviews"
 const val mergesEndpoint = "/merges"
+const val mergeEndpoint = "/merge"
 
 const val LABEL = "Test"
 
 val config = loadConfig()
 val basic = config.basic
-val repo = config.repo
-val headers = mapOf("authorization" to basic, "accept" to "application/vnd.github.v3+json", "content-type" to "application/json")
+val baseUrl = config.repo
+val headers = mapOf(
+        "authorization" to basic,
+        "accept" to "application/vnd.github.v3+json",
+        "content-type" to "application/json")
 
 val mapper = jacksonObjectMapper()
 
 //TODO Re-implement using coroutines so we can hit multiple repositories at once
 fun main(args: Array<String>) {
-    val pull = getOldestLabeledRequest()
-    val reviewStatus: MergeState? = pull?.let { getReviewStatus(pull)}
+//    while(true) {
+        val pull = getOldestLabeledRequest()
+        val reviewStatus: MergeState? = pull?.let { getReviewStatus(pull) }
 
-    reviewStatus?.let {
-        if (reviewStatus == MergeState.BEHIND) updateBranch(pull)
-    }
-
-
-    println("Review status: $reviewStatus")
-//    pull?.let { deleteLabel(it) }
+        reviewStatus?.let {
+            if (reviewStatus == MergeState.BEHIND) updateBranch(pull)
+            if (reviewStatus == MergeState.CLEAN) squashMerge(pull)
+        }
+//        Thread.sleep(60_000)
+//    }
 }
 
 fun getOldestLabeledRequest(): Pull? {
-    val url = repo + pullsEndpoint
+    val url = baseUrl + pullsEndpoint
     val (_, _, result) = url.httpGet().header(headers).responseString()
     when (result) {
         is Result.Failure -> logFailure(result)
@@ -53,8 +57,35 @@ fun getOldestLabeledRequest(): Pull? {
     return null
 }
 
+fun squashMerge(pull: Pull) {
+    val url = baseUrl + pullsEndpoint + DELIMITER + pull.number + mergeEndpoint
+    val body =  "{ \"commit_title\" : \"${pull.title}\", \"merge_method\" : \"squash\" }"
+    val (request, _, result) = url.httpPut().body(body).header(headers).responseString()
+    when (result) {
+        is Result.Failure -> {
+            println("Failed to squash merge $request")
+            logFailure(result)
+        }
+        is Result.Success -> {
+            println("Successfully squash merged ${pull.title} to master")
+            deleteBranch(pull)
+        }
+    }
+}
+
+fun deleteBranch(pull: Pull) {
+    val url = baseUrl + "/git/refs/heads/" + pull.head.ref
+    val (_, _, result) = url.httpDelete().header(headers).responseString()
+    when (result) {
+        is Result.Failure -> logFailure(result)
+        is Result.Success -> {
+            println("Successfully deleted ${pull.head.ref}")
+        }
+    }
+}
+
 fun updateBranch(pull: Pull) {
-    val url = repo + mergesEndpoint
+    val url = baseUrl + mergesEndpoint
     val body = "{ \"head\" : \"${pull.base.ref}\", \"base\" : \"${pull.head.ref}\", \"commit_message\" : \"Merge master into branch\" }"
     val (_, _, result) = url.httpPost().body(body).header(headers).responseString()
     when (result) {
@@ -66,7 +97,7 @@ fun updateBranch(pull: Pull) {
 }
 
 fun getReviewStatus(pull: Pull): MergeState {
-    val url = repo + pullsEndpoint + DELIMITER + pull.number
+    val url = baseUrl + pullsEndpoint + DELIMITER + pull.number
     val (_, _, result) = url.httpGet().header(headers).responseString()
     when (result) {
         is Result.Failure -> logFailure(result)
@@ -92,7 +123,7 @@ private fun logFailure(result: Result.Failure<String, FuelError>) =
         println("======\n\n\n Something went wrong:\n ${result.getException()} \n\n\n======")
 
 fun deleteLabel(pull: Pull) {
-    val url = repo + issuesEndpoint + DELIMITER + pull.number + labelsEndpoint + DELIMITER + LABEL
+    val url = baseUrl + issuesEndpoint + DELIMITER + pull.number + labelsEndpoint + DELIMITER + LABEL
     val (_, _, result) = url.httpDelete().header(headers).responseString()
     when (result) {
         is Result.Failure -> logFailure(result)
