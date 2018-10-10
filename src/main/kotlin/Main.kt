@@ -37,9 +37,11 @@ fun main(args: Array<String>) {
 
         reviewStatus?.let {
             println("Status is $reviewStatus")
-            if (reviewStatus == MergeState.BEHIND) updateBranch(pull)
-            if (reviewStatus == MergeState.CLEAN) squashMerge(pull)
-            if (reviewStatus == MergeState.BAD) deleteLabel(pull)
+            when (reviewStatus) {
+                MergeState.BEHIND -> updateBranch(pull)
+                MergeState.CLEAN -> squashMerge(pull)
+                MergeState.BAD -> deleteLabel(pull)
+            }
         }
         Thread.sleep(60_000)
     }
