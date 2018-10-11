@@ -16,6 +16,8 @@ const val labelsEndpoint = "/labels"
 const val issuesEndpoint = "/issues"
 const val mergesEndpoint = "/merges"
 const val mergeEndpoint = "/merge"
+const val commitsEndpoint = "/commits"
+const val checkRunsEndpoint = "/check-runs"
 
 const val LABEL = "Automerge"
 
@@ -24,14 +26,14 @@ val basic = config.basic
 val baseUrl = config.repo
 val headers = mapOf(
         "authorization" to basic,
-        "accept" to "application/vnd.github.v3+json",
+        "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
         "content-type" to "application/json")
 
 val mapper = jacksonObjectMapper()
 
 //TODO Re-implement using coroutines so we can hit multiple repositories at once
 fun main(args: Array<String>) {
-    while(true) {
+    while (true) {
         val pull = getOldestLabeledRequest()
         val reviewStatus: MergeState? = pull?.let { getReviewStatus(pull) }
 
@@ -40,7 +42,7 @@ fun main(args: Array<String>) {
             when (reviewStatus) {
                 MergeState.CLEAN -> squashMerge(pull)
                 MergeState.BEHIND -> updateBranch(pull)
-                MergeState.BLOCKED -> deleteLabel(pull)
+                MergeState.BLOCKED -> assessStatusChecks(pull)
                 MergeState.BAD -> deleteLabel(pull)
             }
         }
@@ -64,7 +66,7 @@ fun getOldestLabeledRequest(): Pull? {
 
 fun squashMerge(pull: Pull) {
     val url = baseUrl + pullsEndpoint + DELIMITER + pull.number + mergeEndpoint
-    val body =  "{ \"commit_title\" : \"${pull.title}\", \"merge_method\" : \"squash\" }"
+    val body = "{ \"commit_title\" : \"${pull.title}\", \"merge_method\" : \"squash\" }"
     val (request, _, result) = url.httpPut().body(body).header(headers).responseString()
     when (result) {
         is Result.Failure -> {
@@ -115,18 +117,30 @@ fun getReviewStatus(pull: Pull): MergeState {
     return MergeState.BAD
 }
 
+fun assessStatusChecks(pull: Pull) {
+    val url = baseUrl + commitsEndpoint + DELIMITER + pull.head.sha + checkRunsEndpoint
+    val (_, _, result) = url.httpGet().header(headers).responseString()
+    when (result) {
+        is Result.Failure -> logFailure(result)
+        is Result.Success -> {
+            val statusCheck: Check = mapper.readValue(result.get())
+            if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) deleteLabel(pull)
+        }
+    }
+}
+
 fun determineMergeState(mergeStatus: MergeStatus): MergeState {
     when (mergeStatus.mergeable) {
         null -> return MergeState.WAITING
         false -> return MergeState.BAD
     }
     println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
-    //TODO Should be deal with unstable state, or just return bad in that case? Need to understand when this happens
     return when (mergeStatus.mergeableState) {
         "behind" -> MergeState.BEHIND
         "clean" -> MergeState.CLEAN
         "blocked" -> MergeState.BLOCKED
         "has_hooks" -> MergeState.WAITING
+        "unstable" -> MergeState.WAITING // TODO Watch out for things getting stuck in these states
         "unknown" -> MergeState.WAITING
         else -> MergeState.BAD
     }
@@ -147,16 +161,22 @@ fun deleteLabel(pull: Pull) {
 enum class MergeState {
     CLEAN,
     BEHIND,
-    BLOCKED, //TODO May be able to get rid of this and just use BAD. Need to understand when this happens
+    BLOCKED,
     WAITING,
     BAD
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+data class StatusCheck(val status: String, val conclusion: String?)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Check(@JsonProperty("total_count") val count: Int, @JsonProperty("check_runs") val checkRuns: List<StatusCheck>)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class MergeStatus(val number: Long, val mergeable: Boolean?, @JsonProperty("mergeable_state") val mergeableState: String)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Branch(val ref: String)
+data class Branch(val ref: String, val sha: String)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Pull(val id: Long, val number: Long, val title: String, val url: String, val labels: List<Label>, val base: Branch, val head: Branch)
