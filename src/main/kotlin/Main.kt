@@ -8,6 +8,8 @@ import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 
 
 const val DELIMITER = "/"
@@ -43,7 +45,7 @@ fun main(args: Array<String>) {
                 MergeState.CLEAN -> squashMerge(pull)
                 MergeState.BEHIND -> updateBranch(pull)
                 MergeState.BLOCKED -> assessStatusChecks(pull)
-                MergeState.BAD -> deleteLabel(pull)
+                MergeState.BAD -> removeLabel(pull)
             }
         }
         Thread.sleep(60_000)
@@ -71,7 +73,7 @@ fun squashMerge(pull: Pull) {
     when (result) {
         is Result.Failure -> {
             println("Failed to squash merge $request")
-            deleteLabel(pull)
+            removeLabel(pull)
             logFailure(result)
         }
         is Result.Success -> {
@@ -99,7 +101,7 @@ fun updateBranch(pull: Pull) {
     when (result) {
         is Result.Failure -> logFailure(result)
         is Result.Success -> {
-            println("Successfully updating branch")
+            println("Successfully updating branch for PRi : ${pull.title}")
         }
     }
 }
@@ -124,7 +126,7 @@ fun assessStatusChecks(pull: Pull) {
         is Result.Failure -> logFailure(result)
         is Result.Success -> {
             val statusCheck: Check = mapper.readValue(result.get())
-            if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) deleteLabel(pull)
+            if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) removeLabel(pull)
         }
     }
 }
@@ -147,14 +149,14 @@ fun determineMergeState(mergeStatus: MergeStatus): MergeState {
 }
 
 private fun logFailure(result: Result.Failure<String, FuelError>) =
-        println("======\n\n\n Something went wrong:\n ${result.getException()} \n\n\n======")
+        println("======\n\n\n ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}Something went wrong:\n ${result.getException()} \n\n\n======")
 
-fun deleteLabel(pull: Pull) {
+fun removeLabel(pull: Pull) {
     val url = baseUrl + issuesEndpoint + DELIMITER + pull.number + labelsEndpoint + DELIMITER + LABEL
     val (_, _, result) = url.httpDelete().header(headers).responseString()
     when (result) {
         is Result.Failure -> logFailure(result)
-        is Result.Success -> println("Successfully removed label")
+        is Result.Success -> println("Successfully removed label from PR: ${pull.title}")
     }
 }
 
