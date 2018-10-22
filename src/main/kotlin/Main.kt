@@ -46,6 +46,7 @@ fun main(args: Array<String>) {
                 MergeState.BEHIND -> updateBranch(pull)
                 MergeState.BLOCKED -> assessStatusChecks(pull)
                 MergeState.BAD -> removeLabel(pull)
+                MergeState.WAITING -> println("Waiting...")
             }
         }
         Thread.sleep(60_000)
@@ -101,7 +102,7 @@ fun updateBranch(pull: Pull) {
     when (result) {
         is Result.Failure -> logFailure(result)
         is Result.Success -> {
-            println("Successfully updating branch for PRi : ${pull.title}")
+            println("Successfully updating branch for PR: ${pull.title}")
         }
     }
 }
