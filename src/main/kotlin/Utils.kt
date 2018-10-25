@@ -3,7 +3,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import java.io.FileInputStream
 
-fun loadGithubConfig(): GithubConfig {
+fun loadGithubConfig(): List<GithubConfig> {
     val mapper = ObjectMapper(YAMLFactory())
     mapper.registerModule(KotlinModule())
 
@@ -12,20 +12,25 @@ fun loadGithubConfig(): GithubConfig {
     }
 
     val basic = config.basic
-    val baseUrl = config.repo
+    val label = config.label
     val headers: Map<String, String> = mapOf(
             "authorization" to basic,
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
-    return GithubConfig(baseUrl, headers)
+
+    return config.repos.map {
+        GithubConfig(it, label, headers)
+    }
 }
 
 data class GithubConfig(
         val baseUrl: String,
+        val label: String,
         val headers: Map<String, String>
 )
 
 data class ConfigDto(
         val basic: String,
-        val repo: String
+        val label: String,
+        val repos: List<String>
 )

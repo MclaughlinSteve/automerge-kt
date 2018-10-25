@@ -23,6 +23,7 @@ val mapper = jacksonObjectMapper()
 class GithubService(config: GithubConfig) {
     private val baseUrl = config.baseUrl
     private val headers = config.headers
+    private val label = config.label
 
     fun getOldestLabeledRequest(): Pull? {
         val url = baseUrl + pullsEndpoint
@@ -32,7 +33,7 @@ class GithubService(config: GithubConfig) {
             is Result.Success -> {
                 val pulls: List<Pull> = mapper.readValue(result.get())
 
-                return pulls.lastOrNull { p -> p.labels.isNotEmpty() && p.labels.any { l -> l.name == LABEL } }
+                return pulls.lastOrNull { p -> p.labels.isNotEmpty() && p.labels.any { l -> l.name == label } }
             }
         }
         return null
@@ -91,6 +92,9 @@ class GithubService(config: GithubConfig) {
         return MergeState.BAD
     }
 
+    /**
+     * Note: This function is probably specific to the applications I'm using this on
+     */
     fun assessStatusChecks(pull: Pull) {
         val url = baseUrl + commitsEndpoint + DELIMITER + pull.head.sha + checkRunsEndpoint
         val (_, _, result) = url.httpGet().header(headers).responseString()
@@ -103,7 +107,7 @@ class GithubService(config: GithubConfig) {
         }
     }
 
-    fun determineMergeState(mergeStatus: MergeStatus): MergeState {
+    private fun determineMergeState(mergeStatus: MergeStatus): MergeState {
         when (mergeStatus.mergeable) {
             null -> return MergeState.WAITING
             false -> return MergeState.BAD
@@ -124,7 +128,7 @@ class GithubService(config: GithubConfig) {
             println("======\n\n\n ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}Something went wrong:\n ${result.getException()} \n\n\n======")
 
     fun removeLabel(pull: Pull) {
-        val url = baseUrl + issuesEndpoint + DELIMITER + pull.number + labelsEndpoint + DELIMITER + LABEL
+        val url = baseUrl + issuesEndpoint + DELIMITER + pull.number + labelsEndpoint + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
