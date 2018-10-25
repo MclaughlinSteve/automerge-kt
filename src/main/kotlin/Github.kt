@@ -56,7 +56,7 @@ class GithubService(config: GithubConfig) {
         }
     }
 
-    fun deleteBranch(pull: Pull) {
+    private fun deleteBranch(pull: Pull) {
         val url = baseUrl + "/git/refs/heads/" + pull.head.ref
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
