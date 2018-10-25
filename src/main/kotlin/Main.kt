@@ -1,13 +1,17 @@
+import kotlinx.coroutines.*
+
 val githubConfig: List<GithubConfig> = loadGithubConfig()
 
 fun main(args: Array<String>) {
     val services = githubConfig.map { GithubService(it) }
     while (true) {
-        //TODO Re-implement using coroutines so we can hit multiple repositories at once in parallel
-        services.forEach {
-            executeAutomerge(it)
+        runBlocking {
+            services.forEach {
+                launch {
+                    executeAutomerge(it)
+                }
+            }
         }
-
         Thread.sleep(60_000)
     }
 }
