@@ -1,7 +1,6 @@
 val githubConfig: List<GithubConfig> = loadGithubConfig()
 
 fun main(args: Array<String>) {
-    githubConfig.forEach { println(it) }
     val services = githubConfig.map { GithubService(it) }
     while (true) {
         //TODO Re-implement using coroutines so we can hit multiple repositories at once in parallel
