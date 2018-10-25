@@ -1,4 +1,5 @@
 basic: Basic your-auth-token
+label: your-automerge-label
 repos:
 - https://api.github.com/repos/org-name/your-repo-name
 - https://api.github.com/repos/org-name/your-other-repo-name
