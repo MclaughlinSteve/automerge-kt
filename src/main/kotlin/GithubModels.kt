@@ -17,16 +17,15 @@ data class StatusCheck(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Check(
-        @JsonProperty("total_count")
-        val count: Int, @JsonProperty("check_runs")
-        val checkRuns: List<StatusCheck>
+        @JsonProperty("total_count") val count: Int,
+        @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MergeStatus(
-        val number: Long, val mergeable: Boolean?,
-        @JsonProperty("mergeable_state")
-        val mergeableState: String
+        val number: Long,
+        val mergeable: Boolean?,
+        @JsonProperty("mergeable_state") val mergeableState: String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
