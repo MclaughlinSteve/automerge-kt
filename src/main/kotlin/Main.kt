@@ -2,7 +2,7 @@ import kotlinx.coroutines.*
 
 val githubConfig: List<GithubConfig> = loadGithubConfig()
 
-fun main(args: Array<String>) {
+fun main() {
     val services = githubConfig.map { GithubService(it) }
     while (true) {
         runBlocking {
