@@ -10,13 +10,13 @@ import java.time.Instant
 import java.time.format.DateTimeFormatter
 
 const val DELIMITER = "/"
-const val pullsEndpoint = "/pulls"
-const val labelsEndpoint = "/labels"
-const val issuesEndpoint = "/issues"
-const val mergesEndpoint = "/merges"
-const val mergeEndpoint = "/merge"
-const val commitsEndpoint = "/commits"
-const val checkRunsEndpoint = "/check-runs"
+const val PULLS = "/pulls"
+const val LABELS = "/labels"
+const val ISSUES = "/issues"
+const val MERGES = "/merges"
+const val MERGE = "/merge"
+const val COMMITS = "/commits"
+const val CHECK_RUNS = "/check-runs"
 
 val mapper = jacksonObjectMapper()
 
@@ -26,7 +26,7 @@ class GithubService(config: GithubConfig) {
     private val label = config.label
 
     fun getOldestLabeledRequest(): Pull? {
-        val url = baseUrl + pullsEndpoint
+        val url = baseUrl + PULLS
         val (_, _, result) = url.httpGet().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
@@ -40,7 +40,7 @@ class GithubService(config: GithubConfig) {
     }
 
     fun squashMerge(pull: Pull) {
-        val url = baseUrl + pullsEndpoint + DELIMITER + pull.number + mergeEndpoint
+        val url = baseUrl + PULLS + DELIMITER + pull.number + MERGE
         val body = "{ \"commit_title\" : \"${pull.title}\", \"merge_method\" : \"squash\" }"
         val (request, _, result) = url.httpPut().body(body).header(headers).responseString()
         when (result) {
@@ -68,7 +68,7 @@ class GithubService(config: GithubConfig) {
     }
 
     fun updateBranch(pull: Pull) {
-        val url = baseUrl + mergesEndpoint
+        val url = baseUrl + MERGES
         val body = "{ \"head\" : \"${pull.base.ref}\", \"base\" : \"${pull.head.ref}\", \"commit_message\" : \"Update branch\" }"
         val (_, _, result) = url.httpPost().body(body).header(headers).responseString()
         when (result) {
@@ -80,7 +80,7 @@ class GithubService(config: GithubConfig) {
     }
 
     fun getReviewStatus(pull: Pull): MergeState {
-        val url = baseUrl + pullsEndpoint + DELIMITER + pull.number
+        val url = baseUrl + PULLS + DELIMITER + pull.number
         val (_, _, result) = url.httpGet().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
@@ -96,7 +96,7 @@ class GithubService(config: GithubConfig) {
      * Note: This function is probably specific to the applications I'm using this on
      */
     fun assessStatusChecks(pull: Pull) {
-        val url = baseUrl + commitsEndpoint + DELIMITER + pull.head.sha + checkRunsEndpoint
+        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + CHECK_RUNS
         val (_, _, result) = url.httpGet().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
@@ -128,7 +128,7 @@ class GithubService(config: GithubConfig) {
             println("======\n\n\n ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}Something went wrong:\n ${result.getException()} \n\n\n======")
 
     fun removeLabel(pull: Pull) {
-        val url = baseUrl + issuesEndpoint + DELIMITER + pull.number + labelsEndpoint + DELIMITER + label
+        val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
