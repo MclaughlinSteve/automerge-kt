@@ -69,7 +69,7 @@ class GithubService(config: GithubConfig) {
 
     fun updateBranch(pull: Pull) {
         val url = baseUrl + mergesEndpoint
-        val body = "{ \"head\" : \"${pull.base.ref}\", \"base\" : \"${pull.head.ref}\", \"commit_message\" : \"Merge master into branch\" }"
+        val body = "{ \"head\" : \"${pull.base.ref}\", \"base\" : \"${pull.head.ref}\", \"commit_message\" : \"Update branch\" }"
         val (_, _, result) = url.httpPost().body(body).header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
