@@ -15,7 +15,7 @@ it runs the following asynchronously (so that it can run all of the specified re
     the PR is merged and the branch is deleted.
 
 Note: It only works on a single PR per repository at a time so that it doesn't blow up your CI pipeline with builds 
-for every labeled pull request (Including this because someone though that it was calling update branch on every 
+for every labeled pull request (Including this because someone thought that it was calling update branch on every 
 single labeled PR at once rather than dealing with PRs one-by-one from oldest to newest).
 
 
