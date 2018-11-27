@@ -1,6 +1,6 @@
 # Automerge-kt
 
-Automatically update and merge all pull requests in the repo with the `Automerge` label from oldest to newest.
+Automatically update and merge all github pull requests (PRs) in the repo with the `Automerge` label from oldest to newest.
 
 ## How it works
 
