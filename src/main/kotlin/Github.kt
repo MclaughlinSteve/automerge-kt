@@ -19,6 +19,7 @@ const val COMMITS = "/commits"
 const val CHECK_RUNS = "/check-runs"
 
 val mapper = jacksonObjectMapper()
+fun Any.toJsonString(): String = mapper.writeValueAsString(this)
 
 class GithubService(config: GithubConfig) {
     private val baseUrl = config.baseUrl
@@ -41,8 +42,8 @@ class GithubService(config: GithubConfig) {
 
     fun squashMerge(pull: Pull) {
         val url = baseUrl + PULLS + DELIMITER + pull.number + MERGE
-        val body = "{ \"commit_title\" : \"${pull.title}\", \"merge_method\" : \"squash\" }"
-        val (request, _, result) = url.httpPut().body(body).header(headers).responseString()
+        val body = CommitBody(pull.title)
+        val (request, _, result) = url.httpPut().body(body.toJsonString()).header(headers).responseString()
         when (result) {
             is Result.Failure -> {
                 println("Failed to squash merge $request")
@@ -50,7 +51,7 @@ class GithubService(config: GithubConfig) {
                 logFailure(result)
             }
             is Result.Success -> {
-                println("Successfully squash merged ${pull.title} to master")
+                println("Successfully squash merged ${pull.title}!")
                 deleteBranch(pull)
             }
         }
@@ -69,8 +70,8 @@ class GithubService(config: GithubConfig) {
 
     fun updateBranch(pull: Pull) {
         val url = baseUrl + MERGES
-        val body = "{ \"head\" : \"${pull.base.ref}\", \"base\" : \"${pull.head.ref}\", \"commit_message\" : \"Update branch\" }"
-        val (_, _, result) = url.httpPost().body(body).header(headers).responseString()
+        val body = UpdateBody(pull.base.ref, pull.head.ref)
+        val (_, _, result) = url.httpPost().body(body.toJsonString()).header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -124,8 +125,16 @@ class GithubService(config: GithubConfig) {
         }
     }
 
-    private fun logFailure(result: Result.Failure<String, FuelError>) =
-            println("======\n\n\n ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}Something went wrong:\n ${result.getException()} \n\n\n======")
+    private fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") =
+            println("""
+                |======================
+                | $message
+                | Time: ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}
+                |
+                | Exception:
+                | ${result.getException()}
+                |======================
+            """.trimIndent())
 
     fun removeLabel(pull: Pull) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label

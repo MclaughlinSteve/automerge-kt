@@ -47,3 +47,14 @@ data class Pull(
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Label(val name: String)
+
+data class CommitBody(
+        @JsonProperty("commit_title") val commitTitle: String,
+        @JsonProperty("merge_method") val mergeMethod: String = "squash"
+)
+
+data class UpdateBody(
+        val head: String,
+        val base: String,
+        @JsonProperty("commit_message") val commitMessage: String = "Update branch"
+)

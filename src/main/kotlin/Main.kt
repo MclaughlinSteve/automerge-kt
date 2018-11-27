@@ -1,6 +1,7 @@
 import kotlinx.coroutines.*
 
 val githubConfig: List<GithubConfig> = loadGithubConfig()
+const val INTERVAL: Long = 60_000
 
 fun main() {
     val services = githubConfig.map { GithubService(it) }
@@ -12,7 +13,7 @@ fun main() {
                 }
             }
         }
-        Thread.sleep(60_000)
+        Thread.sleep(INTERVAL)
     }
 }
 
