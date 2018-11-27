@@ -19,7 +19,7 @@ for every labeled pull request (Including this because someone though that it wa
 single labeled PR at once rather than dealing with PRs one-by-one from oldest to newest).
 
 
-##### Acknowledgements
+#### Acknowledgements
 
 I based this on a similar project that a former coworker built using clojure that does essentially the same thing. 
 I wanted to write something in kotlin and needed a few things specific to my new team.
