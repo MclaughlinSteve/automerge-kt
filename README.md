@@ -1,6 +1,6 @@
 # Automerge-kt
 
-Automatically update and merge all github pull requests (PRs) in the repo with the `Automerge` label from oldest to newest.
+Automatically update and merge all github pull requests (PRs) in the specified repos with the `Automerge` label from oldest to newest.
 
 ## Configuration
 Replace the placeholders in the [config.yml](https://github.com/MclaughlinSteve/automerge-kt/blob/master/src/main/resources/config.yml) with the information relative to your project (i.e. add a github token, the label that you want to use for automerging, and the url to as many repos as you want to run it across).
