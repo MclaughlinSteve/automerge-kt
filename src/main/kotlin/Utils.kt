@@ -7,18 +7,16 @@ fun loadGithubConfig(): List<GithubConfig> {
     val mapper = ObjectMapper(YAMLFactory())
     mapper.registerModule(KotlinModule())
 
-    val config = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
+    val (basic, label, repos) = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
         mapper.readValue(it, ConfigDto::class.java)
     }
 
-    val basic = config.basic
-    val label = config.label
     val headers: Map<String, String> = mapOf(
             "authorization" to basic,
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
 
-    return config.repos.map {
+    return repos.map {
         GithubConfig(it, label, headers)
     }
 }
