@@ -1,6 +1,6 @@
 # Automerge-kt
 
-Automatically update and merge all pull requests in the repo with the `Automerge` label from oldest to newest.
+Automatically update and merge all github pull requests (PRs) in the repo with the `Automerge` label from oldest to newest.
 
 ## How it works
 
@@ -15,11 +15,11 @@ it runs the following asynchronously (so that it can run all of the specified re
     the PR is merged and the branch is deleted.
 
 Note: It only works on a single PR per repository at a time so that it doesn't blow up your CI pipeline with builds 
-for every labeled pull request (Including this because someone though that it was calling update branch on every 
+for every labeled pull request (Including this because someone thought that it was calling update branch on every 
 single labeled PR at once rather than dealing with PRs one-by-one from oldest to newest).
 
 
-##### Acknowledgements
+#### Acknowledgements
 
 I based this on a similar project that a former coworker built using clojure that does essentially the same thing. 
 I wanted to write something in kotlin and needed a few things specific to my new team.
