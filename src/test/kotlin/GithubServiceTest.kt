@@ -2,8 +2,6 @@ import com.github.kittinunf.fuel.core.Client
 import com.github.kittinunf.fuel.core.FuelManager
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
-import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -18,12 +16,6 @@ class GithubServiceTest {
     private val config = GithubConfig("http://foo.test/bar", "Automerge", headers)
     private val service = GithubService(config)
     private val client = mockk<Client>()
-    private val serviceMock = spyk(service)
-
-    init {
-        every { serviceMock.removeLabel(any()) } returns Unit
-    }
-
 
     @Nested
     inner class GetOldestLabeledRequest {
@@ -114,16 +106,6 @@ class GithubServiceTest {
             mockRequest(400, "Bad Request")
             val status = service.getReviewStatus(generateSamplePull(1))
             assertThat(status).isEqualTo(MergeState.BAD)
-        }
-    }
-
-    @Nested
-    inner class squashMerge {
-        @Test
-        fun `Successfully squash merge a pull request`() {
-            val pull = generateSamplePull(1)
-            mockRequest(200, "OK")
-            service.squashMerge(pull)
         }
     }
 
