@@ -11,50 +11,50 @@ enum class MergeState {
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class StatusCheck(
-        val status: String,
-        val conclusion: String?
+    val status: String,
+    val conclusion: String?
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Check(
-        @JsonProperty("total_count") val count: Int,
-        @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
+    @JsonProperty("total_count") val count: Int,
+    @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MergeStatus(
-        val number: Long,
-        val mergeable: Boolean?,
-        @JsonProperty("mergeable_state") val mergeableState: String
+    val number: Long,
+    val mergeable: Boolean?,
+    @JsonProperty("mergeable_state") val mergeableState: String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Branch(
-        val ref: String,
-        val sha: String
+    val ref: String,
+    val sha: String
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Pull(
-        val id: Long,
-        val number: Long,
-        val title: String,
-        val url: String,
-        val labels: List<Label>,
-        val base: Branch,
-        val head: Branch
+    val id: Long,
+    val number: Long,
+    val title: String,
+    val url: String,
+    val labels: List<Label>,
+    val base: Branch,
+    val head: Branch
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Label(val name: String)
 
 data class CommitBody(
-        @JsonProperty("commit_title") val commitTitle: String,
-        @JsonProperty("merge_method") val mergeMethod: String = "squash"
+    @JsonProperty("commit_title") val commitTitle: String,
+    @JsonProperty("merge_method") val mergeMethod: String = "squash"
 )
 
 data class UpdateBody(
-        val head: String,
-        val base: String,
-        @JsonProperty("commit_message") val commitMessage: String = "Update branch"
+    val head: String,
+    val base: String,
+    @JsonProperty("commit_message") val commitMessage: String = "Update branch"
 )

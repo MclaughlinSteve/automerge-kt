@@ -1,4 +1,5 @@
-import kotlinx.coroutines.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 val githubConfig: List<GithubConfig> = loadGithubConfig()
 const val INTERVAL: Long = 60_000
@@ -32,6 +33,3 @@ private fun executeAutomerge(service: GithubService) {
         }
     }
 }
-
-
-

@@ -121,4 +121,3 @@ class GithubServiceTest {
         FuelManager.instance.client = client
     }
 }
-
