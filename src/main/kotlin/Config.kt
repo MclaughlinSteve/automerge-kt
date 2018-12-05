@@ -10,7 +10,7 @@ fun loadGithubConfig(): List<GithubConfig> {
     val basic = System.getenv("GITHUB_USER_TOKEN") ?: throw Exception("Missing GITHUB_USER_TOKEN env variable")
     val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
 
-    val ( repos ) = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
+    val (repos) = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
         mapper.readValue(it, ConfigDto::class.java)
     }
 
@@ -25,11 +25,11 @@ fun loadGithubConfig(): List<GithubConfig> {
 }
 
 data class GithubConfig(
-        val baseUrl: String,
-        val label: String,
-        val headers: Map<String, String>
+    val baseUrl: String,
+    val label: String,
+    val headers: Map<String, String>
 )
 
 data class ConfigDto(
-        val repos: List<String>
+    val repos: List<String>
 )

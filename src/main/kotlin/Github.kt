@@ -149,6 +149,4 @@ class GithubService(config: GithubConfig) {
                 | ${result.getException()}
                 |======================
             """.trimIndent())
-
 }
-

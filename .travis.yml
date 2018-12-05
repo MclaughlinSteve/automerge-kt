@@ -4,4 +4,5 @@ jdk:
   - oraclejdk8
 
 script:
+  - ./gradlew ktlint
   - ./gradlew test --console=plain --info
