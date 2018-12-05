@@ -29,15 +29,50 @@ class GithubService(config: GithubConfig) {
     fun getOldestLabeledRequest(): Pull? {
         val url = baseUrl + PULLS
         val (_, _, result) = url.httpGet().header(headers).responseString()
-        when (result) {
-            is Result.Failure -> logFailure(result)
+        return when (result) {
+            is Result.Failure -> {
+                logFailure(result)
+                null
+            }
             is Result.Success -> {
                 val pulls: List<Pull> = mapper.readValue(result.get())
-
-                return pulls.lastOrNull { p -> p.labels.isNotEmpty() && p.labels.any { l -> l.name == label } }
+                pulls.lastOrNull(::labeledRequest)
             }
         }
-        return null
+    }
+
+    private fun labeledRequest(pull: Pull) = pull.labels.any { it.name == label }
+
+    fun getReviewStatus(pull: Pull): MergeState {
+        val url = baseUrl + PULLS + DELIMITER + pull.number
+        val (_, _, result) = url.httpGet().header(headers).responseString()
+        return when (result) {
+            is Result.Failure -> {
+                logFailure(result)
+                MergeState.BAD
+            }
+            is Result.Success -> {
+                val mergeStatus: MergeStatus = mapper.readValue(result.get())
+                determineMergeState(mergeStatus)
+            }
+        }
+    }
+
+    private fun determineMergeState(mergeStatus: MergeStatus): MergeState {
+        when (mergeStatus.mergeable) {
+            null -> return MergeState.WAITING
+            false -> return MergeState.BAD
+        }
+        println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
+        return when (mergeStatus.mergeableState) {
+            "behind" -> MergeState.BEHIND
+            "clean" -> MergeState.CLEAN
+            "blocked" -> MergeState.BLOCKED
+            "has_hooks" -> MergeState.WAITING
+            "unstable" -> MergeState.WAITING
+            "unknown" -> MergeState.WAITING
+            else -> MergeState.BAD
+        }
     }
 
     fun squashMerge(pull: Pull) {
@@ -80,19 +115,6 @@ class GithubService(config: GithubConfig) {
         }
     }
 
-    fun getReviewStatus(pull: Pull): MergeState {
-        val url = baseUrl + PULLS + DELIMITER + pull.number
-        val (_, _, result) = url.httpGet().header(headers).responseString()
-        when (result) {
-            is Result.Failure -> logFailure(result)
-            is Result.Success -> {
-                val mergeStatus: MergeStatus = mapper.readValue(result.get())
-                return determineMergeState(mergeStatus)
-            }
-        }
-        return MergeState.BAD
-    }
-
     /**
      * Note: This function is probably specific to the applications I'm using this on
      */
@@ -108,20 +130,12 @@ class GithubService(config: GithubConfig) {
         }
     }
 
-    private fun determineMergeState(mergeStatus: MergeStatus): MergeState {
-        when (mergeStatus.mergeable) {
-            null -> return MergeState.WAITING
-            false -> return MergeState.BAD
-        }
-        println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
-        return when (mergeStatus.mergeableState) {
-            "behind" -> MergeState.BEHIND
-            "clean" -> MergeState.CLEAN
-            "blocked" -> MergeState.BLOCKED
-            "has_hooks" -> MergeState.WAITING
-            "unstable" -> MergeState.WAITING // TODO Watch out for things getting stuck in these states
-            "unknown" -> MergeState.WAITING
-            else -> MergeState.BAD
+    fun removeLabel(pull: Pull) {
+        val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
+        val (_, _, result) = url.httpDelete().header(headers).responseString()
+        when (result) {
+            is Result.Failure -> logFailure(result)
+            is Result.Success -> println("Successfully removed label from PR: ${pull.title}")
         }
     }
 
@@ -136,13 +150,5 @@ class GithubService(config: GithubConfig) {
                 |======================
             """.trimIndent())
 
-    fun removeLabel(pull: Pull) {
-        val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
-        val (_, _, result) = url.httpDelete().header(headers).responseString()
-        when (result) {
-            is Result.Failure -> logFailure(result)
-            is Result.Success -> println("Successfully removed label from PR: ${pull.title}")
-        }
-    }
 }
 
