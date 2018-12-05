@@ -7,12 +7,15 @@ fun loadGithubConfig(): List<GithubConfig> {
     val mapper = ObjectMapper(YAMLFactory())
     mapper.registerModule(KotlinModule())
 
-    val (basic, label, repos) = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
+    val basic = System.getenv("GITHUB_USER_TOKEN") ?: throw Exception("Missing GITHUB_USER_TOKEN env variable")
+    val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
+
+    val ( repos ) = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
         mapper.readValue(it, ConfigDto::class.java)
     }
 
     val headers: Map<String, String> = mapOf(
-            "authorization" to basic,
+            "authorization" to "Bearer $basic",
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
 
@@ -28,7 +31,5 @@ data class GithubConfig(
 )
 
 data class ConfigDto(
-        val basic: String,
-        val label: String,
         val repos: List<String>
 )
