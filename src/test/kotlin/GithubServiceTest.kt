@@ -2,6 +2,8 @@ import com.github.kittinunf.fuel.core.Client
 import com.github.kittinunf.fuel.core.FuelManager
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,6 +18,11 @@ class GithubServiceTest {
     private val config = GithubConfig("http://foo.test/bar", "Automerge", headers)
     private val service = GithubService(config)
     private val client = mockk<Client>()
+    private val serviceMock = spyk(service)
+
+    init {
+        every { serviceMock.removeLabel(any()) } returns Unit
+    }
 
 
     @Nested
@@ -110,8 +117,18 @@ class GithubServiceTest {
         }
     }
 
+    @Nested
+    inner class squashMerge {
+        @Test
+        fun `Successfully squash merge a pull request`() {
+            val pull = generateSamplePull(1)
+            mockRequest(200, "OK")
+            service.squashMerge(pull)
+        }
+    }
+
     private fun generateSamplePull(id: Long) =
-            Pull(id, id, "", "", listOf(Label("Automerge")), Branch("", ""), Branch("", ""))
+            Pull(id, id, "Test PR", "", listOf(Label("Automerge")), Branch("", ""), Branch("", ""))
 
     private fun mockRequest(statusCode: Int, responseMessage: String, data: Any? = null) {
         every { client.executeRequest(any()).httpStatusCode } returns statusCode
