@@ -131,7 +131,6 @@ class GithubService(config: GithubConfig) {
     }
 
     fun removeLabel(pull: Pull) {
-        println("got here")
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
