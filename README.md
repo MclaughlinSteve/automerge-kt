@@ -7,9 +7,9 @@ Set the `GITHUB_USER_TOKEN` environment variable to `your-user-token`
 
 (Optional) Set the `AUTOMERGE_LABEL` environment variable with whatever label you're using to automerge. By default `Automerge` will be used.
 
-Replace the placeholders in the [config.yml](https://github.com/MclaughlinSteve/automerge-kt/blob/master/src/main/resources/config.yml) with the information relative to your project (i.e. the url to as many repos as you want to run it across).
+Replace the placeholders in the [config.yml](src/main/resources/config.yml) with the information relative to your project (i.e. the url to as many repos as you want to run it across).
 
-Also, if you want to change the rate that it runs, update the `INTERVAL` constant in [Main.kt](https://github.com/MclaughlinSteve/automerge-kt/blob/master/src/main/kotlin/Main.kt).
+Also, if you want to change the rate that it runs, update the `INTERVAL` constant in [Main.kt](src/main/kotlin/Main.kt).
 
 ## Running it
 `gradle run`
