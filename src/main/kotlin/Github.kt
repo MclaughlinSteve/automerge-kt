@@ -214,7 +214,7 @@ class GithubService(config: GithubConfig) {
      * @param message the failure message that will be displayed before the error - default: "Something went wrong"
      */
     private fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") =
-            logger.error{ ("""
+            logger.error{ """
                 |======================
                 | $message
                 | Time: ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}
