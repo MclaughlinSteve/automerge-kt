@@ -32,7 +32,7 @@ class GithubServiceTest {
         fun `Http error trying to get pull requests`() {
             mockRequest(400, "Bad Request")
             val pull = service.getOldestLabeledRequest()
-            assertThat(pull).isEqualTo(false) // TODO Change back to null
+            assertThat(pull).isEqualTo(null)
         }
     }
 

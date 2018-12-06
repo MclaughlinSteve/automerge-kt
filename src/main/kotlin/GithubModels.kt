@@ -9,7 +9,18 @@ enum class MergeState {
     BEHIND,
     BLOCKED,
     WAITING,
+    UNMERGEABLE,
     BAD
+}
+
+/**
+ * Enumerations used to provide more information about why a pull request was unable to be merged
+ *
+ */
+enum class LabelRemovalReason {
+    DEFAULT,
+    STATUS_CHECKS,
+    MERGE_CONFLICTS
 }
 
 /**

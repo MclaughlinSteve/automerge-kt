@@ -2,9 +2,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
 
-val logger = KotlinLogging.logger {}
 val githubConfig: List<GithubConfig> = loadGithubConfig()
 const val INTERVAL: Long = 60_000
+
+private val logger = KotlinLogging.logger {}
 
 fun main() {
     val services = githubConfig.map { GithubService(it) }
@@ -40,6 +41,7 @@ private fun executeAutomerge(service: GithubService) {
             MergeState.CLEAN -> service.squashMerge(pull)
             MergeState.BEHIND -> service.updateBranch(pull)
             MergeState.BLOCKED -> service.assessStatusChecks(pull)
+            MergeState.UNMERGEABLE -> service.removeLabel(pull, LabelRemovalReason.MERGE_CONFLICTS)
             MergeState.BAD -> service.removeLabel(pull)
             MergeState.WAITING -> Unit // Do nothing
         }
