@@ -18,6 +18,7 @@ const val MERGES = "/merges"
 const val MERGE = "/merge"
 const val COMMITS = "/commits"
 const val CHECK_RUNS = "/check-runs"
+const val COMMENTS = "/comments"
 
 const val LABEL_REMOVAL_DEFAULT = """
     Uh oh! It looks like there was a problem trying to automerge this pull request.
@@ -247,15 +248,31 @@ class GithubService(config: GithubConfig) {
     }
 
     /**
-     * TODO: Make this post a comment on the PR with information about what failed
-     * Log some additional information about why the label was removed from the PR
+     * Leave a comment on a PR with more information about why a label was removed
+     * @param pull the pull request that the label was removed from
+     * @param reason the reason that the label was removed from the pull request
      */
     private fun handleLabelRemoval(pull: Pull, reason: LabelRemovalReason) {
         when (reason) {
-            LabelRemovalReason.DEFAULT -> logger.info { LABEL_REMOVAL_DEFAULT }
-            LabelRemovalReason.STATUS_CHECKS -> logger.info { LABEL_REMOVAL_STATUS_CHECKS }
-            LabelRemovalReason.MERGE_CONFLICTS -> logger.info { LABEL_REMOVAL_MERGE_CONFLICTS }
-            LabelRemovalReason.OUTSTANDING_REVIEWS -> logger.info { LABEL_REMOVAL_OUTSTANDING_REVIEWS }
+            LabelRemovalReason.DEFAULT -> postComment(pull, LABEL_REMOVAL_DEFAULT)
+            LabelRemovalReason.STATUS_CHECKS -> postComment(pull, LABEL_REMOVAL_STATUS_CHECKS)
+            LabelRemovalReason.MERGE_CONFLICTS -> postComment(pull, LABEL_REMOVAL_MERGE_CONFLICTS)
+            LabelRemovalReason.OUTSTANDING_REVIEWS -> postComment(pull, LABEL_REMOVAL_OUTSTANDING_REVIEWS)
+        }
+    }
+
+    /**
+     * Post a comment on the specified PR with the given message
+     * @param pull the pull request for which the comment will be made
+     * @param message the message that will be commented
+     */
+    private fun postComment(pull: Pull, message: String) {
+        val url = baseUrl + ISSUES + DELIMITER + pull.number + COMMENTS
+        val commentBody = CommentBody(message)
+        val (_, _, result) = url.httpPost().body(commentBody.toJsonString()).header(headers).responseString()
+        when (result) {
+            is Result.Failure -> logFailure(result, "Unable to post comment")
+            is Result.Success -> logger.info { "Successfully left a comment on PR: ${pull.title} with message $message"}
         }
     }
 

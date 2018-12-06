@@ -119,3 +119,9 @@ data class UpdateBody(
     val base: String,
     @JsonProperty("commit_message") val commitMessage: String = "Update branch"
 )
+
+/**
+ * The body of the request used to make a comment on a PR
+ * @property body the content of the comment message
+ */
+data class CommentBody(val body: String)
