@@ -24,11 +24,11 @@ It runs on an interval against the repositories specified in the config, and for
 it runs the following asynchronously (so that it can run all of the specified repositories in parallel):
 - Finds the oldest PR with the `Automerge` label on it
 - If that PR has merge conflicts or a github status has failed (e.g. CI check failure or no approvals), 
-    the label on that PR is removed.
+    the label on that PR is removed, and a comment is left on the PR with a guess about why the label was removed.
 - If that PR still has outstanding github statuses (that is, they are currently still running), 
     nothing is done while it waits for the statuses to come back.
 - If that PR has no merge conflicts and all github statuses have passed, 
-    the PR is merged and the branch is deleted.
+    the PR is squash-merged and the branch is deleted.
 
 Note: It only works on a single PR per repository at a time so that it doesn't blow up your CI pipeline with builds 
 for every labeled pull request (Including this because someone thought that it was calling update branch on every 

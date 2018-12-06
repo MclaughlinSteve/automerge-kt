@@ -18,36 +18,37 @@ const val MERGES = "/merges"
 const val MERGE = "/merge"
 const val COMMITS = "/commits"
 const val CHECK_RUNS = "/check-runs"
+const val COMMENTS = "/comments"
 
 const val LABEL_REMOVAL_DEFAULT = """
-    Uh oh! It looks like there was a problem trying to automerge this pull request.
-    Here are some possible reasons why the label may have been removed:
-    - There are outstanding reviews that need to be addressed before merging is possible
-    - There are merge conflicts with the base branch
-    - There are status checks failing
+Uh oh! It looks like there was a problem trying to automerge this pull request.
+Here are some possible reasons why the label may have been removed:
+- There are outstanding reviews that need to be addressed before merging is possible
+- There are merge conflicts with the base branch
+- There are status checks failing
 
-    If none of those seem like the problem, try looking at the logs for more information.
+If none of those seem like the problem, try looking at the logs for more information.
 """
 
 const val LABEL_REMOVAL_STATUS_CHECKS = """
-    Uh oh! It looks like there was a problem trying to automerge this pull request.
+Uh oh! It looks like there was a problem trying to automerge this pull request.
 
-    It seems likely that this is due to a failing status check. Take a look at your statuses and get
-    them passing before reapplying the automerge label.
+It seems likely that this is due to a failing status check. Take a look at your statuses and get
+them passing before reapplying the automerge label.
 """
 
 const val LABEL_REMOVAL_MERGE_CONFLICTS = """
-    Uh oh! It looks like there was a problem trying to automerge this pull request.
+Uh oh! It looks like there was a problem trying to automerge this pull request.
 
-    It seems likely that there are merge conflicts with the base branch that can't automatically be resolved.
-    Resolve any conflicts with the base branch before reapplying the automerge label.
+It seems likely that there are merge conflicts with the base branch that can't automatically be resolved.
+Resolve any conflicts with the base branch before reapplying the automerge label.
 """
 
 const val LABEL_REMOVAL_OUTSTANDING_REVIEWS = """
-    Uh oh! It looks like there was a problem trying to automerge this pull request.
+Uh oh! It looks like there was a problem trying to automerge this pull request.
 
-    It seems likely that there are some outstanding reviews that still need to be addressed before merging is possible.
-    Address any remaining reviews before reapplying the automerge label
+It seems likely that there are some outstanding reviews that still need to be addressed before merging is possible.
+Address any remaining reviews before reapplying the automerge label
 """
 
 val mapper = jacksonObjectMapper()
@@ -247,15 +248,31 @@ class GithubService(config: GithubConfig) {
     }
 
     /**
-     * TODO: Make this post a comment on the PR with information about what failed
-     * Log some additional information about why the label was removed from the PR
+     * Leave a comment on a PR with more information about why a label was removed
+     * @param pull the pull request that the label was removed from
+     * @param reason the reason that the label was removed from the pull request
      */
     private fun handleLabelRemoval(pull: Pull, reason: LabelRemovalReason) {
         when (reason) {
-            LabelRemovalReason.DEFAULT -> logger.info { LABEL_REMOVAL_DEFAULT }
-            LabelRemovalReason.STATUS_CHECKS -> logger.info { LABEL_REMOVAL_STATUS_CHECKS }
-            LabelRemovalReason.MERGE_CONFLICTS -> logger.info { LABEL_REMOVAL_MERGE_CONFLICTS }
-            LabelRemovalReason.OUTSTANDING_REVIEWS -> logger.info { LABEL_REMOVAL_OUTSTANDING_REVIEWS }
+            LabelRemovalReason.DEFAULT -> postComment(pull, LABEL_REMOVAL_DEFAULT)
+            LabelRemovalReason.STATUS_CHECKS -> postComment(pull, LABEL_REMOVAL_STATUS_CHECKS)
+            LabelRemovalReason.MERGE_CONFLICTS -> postComment(pull, LABEL_REMOVAL_MERGE_CONFLICTS)
+            LabelRemovalReason.OUTSTANDING_REVIEWS -> postComment(pull, LABEL_REMOVAL_OUTSTANDING_REVIEWS)
+        }
+    }
+
+    /**
+     * Post a comment on the specified PR with the given message
+     * @param pull the pull request for which the comment will be made
+     * @param message the message that will be commented
+     */
+    private fun postComment(pull: Pull, message: String) {
+        val url = baseUrl + ISSUES + DELIMITER + pull.number + COMMENTS
+        val commentBody = CommentBody(message)
+        val (_, _, result) = url.httpPost().body(commentBody.toJsonString()).header(headers).responseString()
+        when (result) {
+            is Result.Failure -> logFailure(result, "Unable to post comment")
+            is Result.Success -> logger.info { "Successfully commented on PR: ${pull.title} with message $message" }
         }
     }
 
