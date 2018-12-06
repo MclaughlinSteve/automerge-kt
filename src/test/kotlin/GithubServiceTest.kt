@@ -42,7 +42,7 @@ class GithubServiceTest {
         fun `Pull request is not mergeable returns bad state`() {
             mockRequest(200, "OK", MergeStatus(1, false, "unknown"))
             val status = service.getReviewStatus(generateSamplePull(1))
-            assertThat(status).isEqualTo(MergeState.BAD)
+            assertThat(status).isEqualTo(MergeState.UNMERGEABLE)
         }
 
         @Test

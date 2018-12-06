@@ -6,6 +6,7 @@ import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
+import mu.KotlinLogging
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -18,6 +19,37 @@ const val MERGE = "/merge"
 const val COMMITS = "/commits"
 const val CHECK_RUNS = "/check-runs"
 
+const val LABEL_REMOVAL_DEFAULT = """
+    Uh oh! It looks like there was a problem trying to automerge this pull request.
+    Here are some possible reasons why the label may have been removed:
+    - There are outstanding reviews that need to be addressed before merging is possible
+    - There are merge conflicts with the base branch
+    - There are status checks failing
+
+    If none of those seem like the problem, try looking at the logs for more information.
+"""
+
+const val LABEL_REMOVAL_STATUS_CHECKS = """
+    Uh oh! It looks like there was a problem trying to automerge this pull request.
+
+    It seems likely that this is due to a failing status check. Take a look at your statuses and get
+    them passing before reapplying the automerge label.
+"""
+
+const val LABEL_REMOVAL_MERGE_CONFLICTS = """
+    Uh oh! It looks like there was a problem trying to automerge this pull request.
+
+    It seems likely that there are merge conflicts with the base branch that can't automatically be resolved.
+    Resolve any conflicts with the base branch before reapplying the automerge label.
+"""
+
+const val LABEL_REMOVAL_OUTSTANDING_REVIEWS = """
+    Uh oh! It looks like there was a problem trying to automerge this pull request.
+
+    It seems likely that there are some outstanding reviews that still need to be addressed before merging is possible.
+    Address any remaining reviews before reapplying the automerge label
+"""
+
 val mapper = jacksonObjectMapper()
 
 /**
@@ -29,6 +61,7 @@ fun Any.toJsonString(): String = mapper.writeValueAsString(this)
  * Service for performing operations related to github
  */
 class GithubService(config: GithubConfig) {
+    private val logger = KotlinLogging.logger {}
     private val baseUrl = config.baseUrl
     private val headers = config.headers
     private val label = config.label
@@ -91,9 +124,9 @@ class GithubService(config: GithubConfig) {
     private fun determineMergeState(mergeStatus: MergeStatus): MergeState {
         when (mergeStatus.mergeable) {
             null -> return MergeState.WAITING
-            false -> return MergeState.BAD
+            false -> return MergeState.UNMERGEABLE
         }
-        println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
+        logger.info { "The mergeable state before producing status is: ${mergeStatus.mergeableState}" }
         return when (mergeStatus.mergeableState) {
             "behind" -> MergeState.BEHIND
             "clean" -> MergeState.CLEAN
@@ -121,12 +154,12 @@ class GithubService(config: GithubConfig) {
         val (request, _, result) = url.httpPut().body(body.toJsonString()).header(headers).responseString()
         when (result) {
             is Result.Failure -> {
-                println("Failed to squash merge $request")
+                logger.error { "Failed to squash merge $request" }
                 removeLabel(pull)
                 logFailure(result)
             }
             is Result.Success -> {
-                println("Successfully squash merged ${pull.title}!")
+                logger.info { "Successfully squash merged ${pull.title}!" }
                 deleteBranch(pull)
             }
         }
@@ -145,7 +178,7 @@ class GithubService(config: GithubConfig) {
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
-                println("Successfully deleted ${pull.head.ref}")
+                logger.info { "Successfully deleted ${pull.head.ref}" }
             }
         }
     }
@@ -164,7 +197,7 @@ class GithubService(config: GithubConfig) {
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
-                println("Successfully updating branch for PR: ${pull.title}")
+                logger.info { "Successfully updating branch for PR: ${pull.title}" }
             }
         }
     }
@@ -187,7 +220,11 @@ class GithubService(config: GithubConfig) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
                 val statusCheck: Check = mapper.readValue(result.get())
-                if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) removeLabel(pull)
+                if (statusCheck.checkRuns.any { it.conclusion == "failure" || it.conclusion == "action_required" }) {
+                    removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
+                } else if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) {
+                    removeLabel(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+                }
             }
         }
     }
@@ -197,30 +234,44 @@ class GithubService(config: GithubConfig) {
      *
      * @param pull the pull request for which the label will be removed
      */
-    fun removeLabel(pull: Pull) {
+    fun removeLabel(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
-            is Result.Success -> println("Successfully removed label from PR: ${pull.title}")
+            is Result.Success -> {
+                logger.info { "Successfully removed label from PR: ${pull.title}" }
+                handleLabelRemoval(pull, reason)
+            }
         }
     }
 
     /**
-     * TODO: Use a logger instead of doing this stuff myself (Existing github issue)
-     *
+     * TODO: Make this post a comment on the PR with information about what failed
+     * Log some additional information about why the label was removed from the PR
+     */
+    private fun handleLabelRemoval(pull: Pull, reason: LabelRemovalReason) {
+        when (reason) {
+            LabelRemovalReason.DEFAULT -> logger.info { LABEL_REMOVAL_DEFAULT }
+            LabelRemovalReason.STATUS_CHECKS -> logger.info { LABEL_REMOVAL_STATUS_CHECKS }
+            LabelRemovalReason.MERGE_CONFLICTS -> logger.info { LABEL_REMOVAL_MERGE_CONFLICTS }
+            LabelRemovalReason.OUTSTANDING_REVIEWS -> logger.info { LABEL_REMOVAL_OUTSTANDING_REVIEWS }
+        }
+    }
+
+    /**
      * Print out some formatted information about errors to the console for debugging purposes
      * @param result the failure information from the http request/response
      * @param message the failure message that will be displayed before the error - default: "Something went wrong"
      */
     private fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") =
-            println("""
+            logger.error { """
+                $message
                 |======================
-                | $message
                 | Time: ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}
                 |
                 | Exception:
                 | ${result.getException()}
                 |======================
-            """.trimIndent())
+            """.trimIndent() }
 }
