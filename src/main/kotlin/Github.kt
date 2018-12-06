@@ -272,7 +272,7 @@ class GithubService(config: GithubConfig) {
         val (_, _, result) = url.httpPost().body(commentBody.toJsonString()).header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result, "Unable to post comment")
-            is Result.Success -> logger.info { "Successfully left a comment on PR: ${pull.title} with message $message"}
+            is Result.Success -> logger.info { "Successfully left a comment on PR: ${pull.title} with message $message" }
         }
     }
 
