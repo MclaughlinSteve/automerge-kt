@@ -20,7 +20,8 @@ enum class MergeState {
 enum class LabelRemovalReason {
     DEFAULT,
     STATUS_CHECKS,
-    MERGE_CONFLICTS
+    MERGE_CONFLICTS,
+    OUTSTANDING_REVIEWS
 }
 
 /**

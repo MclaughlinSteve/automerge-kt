@@ -43,6 +43,13 @@ const val LABEL_REMOVAL_MERGE_CONFLICTS = """
     Resolve any conflicts with the base branch before reapplying the automerge label.
 """
 
+const val LABEL_REMOVAL_OUTSTANDING_REVIEWS = """
+    Uh oh! It looks like there was a problem trying to automerge this pull request.
+
+    It seems likely that there are some outstanding reviews that still need to be addressed before merging is possible.
+    Address any remaining reviews before reapplying the automerge label
+"""
+
 val mapper = jacksonObjectMapper()
 
 /**
@@ -216,7 +223,7 @@ class GithubService(config: GithubConfig) {
                 if (statusCheck.checkRuns.any { it.conclusion == "failure" || it.conclusion == "action_required" }) {
                     removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
                 } else if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) {
-                    removeLabel(pull)
+                    removeLabel(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
                 }
             }
         }
@@ -248,6 +255,7 @@ class GithubService(config: GithubConfig) {
             LabelRemovalReason.DEFAULT -> logger.info { LABEL_REMOVAL_DEFAULT }
             LabelRemovalReason.STATUS_CHECKS -> logger.info { LABEL_REMOVAL_STATUS_CHECKS }
             LabelRemovalReason.MERGE_CONFLICTS -> logger.info { LABEL_REMOVAL_MERGE_CONFLICTS }
+            LabelRemovalReason.OUTSTANDING_REVIEWS -> logger.info { LABEL_REMOVAL_OUTSTANDING_REVIEWS }
         }
     }
 
