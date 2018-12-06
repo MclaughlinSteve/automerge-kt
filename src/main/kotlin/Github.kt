@@ -93,7 +93,7 @@ class GithubService(config: GithubConfig) {
             null -> return MergeState.WAITING
             false -> return MergeState.BAD
         }
-        println("The mergeable state before producing status is: ${mergeStatus.mergeableState}")
+        logger.info { "The mergeable state before producing status is: ${mergeStatus.mergeableState}" }
         return when (mergeStatus.mergeableState) {
             "behind" -> MergeState.BEHIND
             "clean" -> MergeState.CLEAN
@@ -121,12 +121,12 @@ class GithubService(config: GithubConfig) {
         val (request, _, result) = url.httpPut().body(body.toJsonString()).header(headers).responseString()
         when (result) {
             is Result.Failure -> {
-                println("Failed to squash merge $request")
+                logger.error { "Failed to squash merge $request" }
                 removeLabel(pull)
                 logFailure(result)
             }
             is Result.Success -> {
-                println("Successfully squash merged ${pull.title}!")
+                logger.info { "Successfully squash merged ${pull.title}!" }
                 deleteBranch(pull)
             }
         }
@@ -145,7 +145,7 @@ class GithubService(config: GithubConfig) {
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
-                println("Successfully deleted ${pull.head.ref}")
+                logger.info { "Successfully deleted ${pull.head.ref}" }
             }
         }
     }
@@ -164,7 +164,7 @@ class GithubService(config: GithubConfig) {
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
-                println("Successfully updating branch for PR: ${pull.title}")
+                logger.info { "Successfully updating branch for PR: ${pull.title}" }
             }
         }
     }
@@ -202,7 +202,7 @@ class GithubService(config: GithubConfig) {
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
-            is Result.Success -> println("Successfully removed label from PR: ${pull.title}")
+            is Result.Success -> logger.info { "Successfully removed label from PR: ${pull.title}" }
         }
     }
 
@@ -214,7 +214,7 @@ class GithubService(config: GithubConfig) {
      * @param message the failure message that will be displayed before the error - default: "Something went wrong"
      */
     private fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") =
-            println("""
+            logger.error{ ("""
                 |======================
                 | $message
                 | Time: ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}
@@ -222,5 +222,5 @@ class GithubService(config: GithubConfig) {
                 | Exception:
                 | ${result.getException()}
                 |======================
-            """.trimIndent())
+            """.trimIndent() }
 }
