@@ -1,23 +1,43 @@
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import mu.KotlinLogging
+import java.io.InputStream
 
 val githubConfig: List<GithubConfig> = loadGithubConfig()
 const val INTERVAL: Long = 60_000
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * Main function used for running the application locally
+ */
 fun main() {
     val services = githubConfig.map { GithubService(it) }
     while (true) {
-        runBlocking {
-            services.forEach {
-                launch {
-                    executeAutomerge(it)
-                }
+        launchAutomerger(services)
+        Thread.sleep(INTERVAL)
+    }
+}
+
+/**
+ * Used to run this application on AWS Lambda
+ */
+fun handleLambda(input: InputStream) {
+    val services = githubConfig.map { GithubService(it) }
+    launchAutomerger(services)
+}
+
+/**
+ * Run the automerge logic for each repository in parallel using coroutines
+ * @param services the service instances for each repository
+ */
+private fun launchAutomerger(services: List<GithubService>) {
+    runBlocking {
+        services.forEach {
+            launch {
+                executeAutomerge(it)
             }
         }
-        Thread.sleep(INTERVAL)
     }
 }
 

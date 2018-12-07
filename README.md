@@ -13,10 +13,24 @@ Set the `GITHUB_USER_TOKEN` environment variable to `your-user-token`
 
 Replace the repository url in the [config.yml](src/main/resources/config.yml) with the information relative to your project (i.e. the urls to as many repos as you want to run it across).
 
-Also, if you want to change the rate that it runs, update the `INTERVAL` constant in [Main.kt](src/main/kotlin/Main.kt).
+__For local running only__: If you want to change the rate that it runs, update the `INTERVAL` constant in [Main.kt](src/main/kotlin/Main.kt).
+Note: This does not apply for running the job on AWS.
 
 ## Running it
 `gradle run`
+
+## Running it on AWS Lambda
+- Set your repositories in the `config.yml` file
+- Build a jar `./gradlew shadowJar`
+- Upload the jar in the "Function Code" section on lambda, choose "Java 8" as the runtime, 
+and set the handler to "MainKt::handleLambda"
+- Set your environment variables (Minimum `GITHUB_USER_TOKEN`)
+- Set your memory usage (I'm testing with 256 MB)
+
+Optional: Set the project to run on a periodic basis
+- Add a "CloudWatch Event trigger"
+- Set the rule type to "schedule expression" and set the expression 
+(e.g. `rate(5, minute)` This runs the function once every five minutes)
 
 ## How it works
 
