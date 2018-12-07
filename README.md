@@ -25,7 +25,7 @@ Note: This does not apply for running the job on AWS.
 - Upload the jar in the "Function Code" section on lambda, choose "Java 8" as the runtime, 
 and set the handler to "MainKt::handleLambda"
 - Set your environment variables (Minimum `GITHUB_USER_TOKEN`)
-- Set your memory usage (I'm testing with the lowest available)
+- Set your memory usage (I'm testing with 256 MB)
 
 Optional: Set the project to run on a periodic basis
 - Add a "CloudWatch Event trigger"
