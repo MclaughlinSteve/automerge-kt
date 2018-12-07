@@ -1,7 +1,6 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import java.io.FileInputStream
 
 fun loadGithubConfig(): List<GithubConfig> {
     val mapper = ObjectMapper(YAMLFactory())
@@ -10,7 +9,7 @@ fun loadGithubConfig(): List<GithubConfig> {
     val basic = System.getenv("GITHUB_USER_TOKEN") ?: throw Exception("Missing GITHUB_USER_TOKEN env variable")
     val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
 
-    val (repos) = FileInputStream("${System.getProperty("user.dir")}/src/main/resources/config.yml").use {
+    val (repos) = Class.forName("ConfigKt").getResourceAsStream("config.yml").use {
         mapper.readValue(it, ConfigDto::class.java)
     }
 
