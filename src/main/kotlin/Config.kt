@@ -8,6 +8,7 @@ fun loadGithubConfig(): List<GithubConfig> {
 
     val basic = System.getenv("GITHUB_USER_TOKEN") ?: throw Exception("Missing GITHUB_USER_TOKEN env variable")
     val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
+    val priority = System.getenv("PRIORITY_LABEL") ?: "Priority"
 
     val (repos) = Class.forName("ConfigKt").getResourceAsStream("config.yml").use {
         mapper.readValue(it, ConfigDto::class.java)
@@ -19,13 +20,14 @@ fun loadGithubConfig(): List<GithubConfig> {
             "content-type" to "application/json")
 
     return repos.map {
-        GithubConfig(it, label, headers)
+        GithubConfig(it, label, priority, headers)
     }
 }
 
 data class GithubConfig(
     val baseUrl: String,
     val label: String,
+    val priority: String,
     val headers: Map<String, String>
 )
 

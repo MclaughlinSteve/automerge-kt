@@ -82,10 +82,18 @@ class GithubService(config: GithubConfig) {
             }
             is Result.Success -> {
                 val pulls: List<Pull> = mapper.readValue(result.get())
-                pulls.lastOrNull(::labeledRequest)
+                val labeledPulls = pulls.filter(::labeledRequest)
+                labeledPulls.lastOrNull(::priorityRequest) ?: labeledPulls.lastOrNull()
             }
         }
     }
+
+    /**
+     * Determine if a given pull request has the specified priority label
+     * @param pull the pull request to check
+     * @return true if the pull request has the specified priority label
+     */
+    private fun priorityRequest(pull: Pull) = pull.labels.any { it.name == "priority" }
 
     /**
      * Determine if a given pull request has the specified automerge label
