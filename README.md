@@ -13,8 +13,8 @@ Set the `GITHUB_USER_TOKEN` environment variable to `your-user-token`
 By default `Automerge` will be used.
 
 (Optional) Set the `PRIORITY_LABEL` environment variable with whatever label you're using for tagging something as 
-high priority. By default `Priority` will be used. The `Priority` label allows a PR with the `Automerge` label to
-take precedence in the merge order rather than merging from the oldest to newest.
+high priority. By default `Priority Automerge` will be used. The `Priority Automerge` label allows a PR to
+take precedence in the merge order.
 
 Replace the repository url in the [config.yml](src/main/resources/config.yml) with the information relative to your 
 project (i.e. the urls to as many repos as you want to run it across).
@@ -43,8 +43,8 @@ Optional: Set the project to run on a periodic basis
 
 It runs on an interval against the repositories specified in the config, and for each repository
 it runs the following asynchronously (so that it can run all of the specified repositories in parallel):
-- Finds the oldest PR with the `Automerge` label on it (Or if there is a PR with both `Automerge` and `Priority` 
-    it will grab the oldest PR with both of those labels)
+- Finds the oldest PR with the `Automerge` label on it (Or if there is a PR with the `Priority Automerge` label,
+    it will grab the oldest PR with that label instead)
 - If that PR has merge conflicts or a github status has failed (e.g. CI check failure or no approvals), 
     the label on that PR is removed, and a comment is left on the PR with a guess about why the label was removed.
 - If that PR still has outstanding github statuses (that is, they are currently still running), 

@@ -83,8 +83,7 @@ class GithubService(config: GithubConfig) {
             }
             is Result.Success -> {
                 val pulls: List<Pull> = mapper.readValue(result.get())
-                val labeledPulls = pulls.filter(::labeledRequest)
-                labeledPulls.lastOrNull(::priorityRequest) ?: labeledPulls.lastOrNull()
+                pulls.lastOrNull(::priorityRequest) ?: pulls.lastOrNull(::labeledRequest)
             }
         }
     }
