@@ -38,12 +38,40 @@ data class StatusCheck(
 /**
  * Data class used to represent information about github's checks (e.g. travis status checks)
  * @property count the number of checks for a given pull request
- * @property checkRuns a lit of status checks that have or are being run
+ * @property checkRuns a list of status checks that have or are being run
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Check(
     @JsonProperty("total_count") val count: Int,
     @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
+)
+
+/**
+ * Data class used to represent information about a github status
+ * (Note: description and context may not need to be nullable)
+ * @property state the state of the status ("success", "pending", "failure", or "error"
+ * @property description A short description of the status
+ * @property context A string label to differentiate this status from the status of other systems
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class StatusItem(
+    val state: String,
+    val description: String?,
+    val context: String?
+)
+
+/**
+ * Data class used to represent information about a github status summary. It has a roll-up of information
+ * about all of the statuses for a particular pull request
+ * @property state the state of the statuses
+ * @property count the number of statuses for a given pull request
+ * @property statuses a list of statuses that have or are being run
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Status(
+    val state: String,
+    @JsonProperty("total_count") val count: Int,
+    val statuses: List<StatusItem>
 )
 
 /**
