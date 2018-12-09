@@ -13,7 +13,7 @@ class GithubServiceTest {
             "authorization" to "Bearer foo",
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
-    private val config = GithubConfig("http://foo.test/bar", "Automerge", headers)
+    private val config = GithubConfig("http://foo.test/bar", "Automerge", "Priority", headers)
     private val service = GithubService(config)
     private val client = mockk<Client>()
 
@@ -26,6 +26,17 @@ class GithubServiceTest {
             mockRequest(200, "OK", listOf(newestPull, oldestPull))
             val pull = service.getOldestLabeledRequest()
             assertThat(pull).isEqualTo(oldestPull)
+        }
+
+        @Test
+        fun `Get a pull request with the priority label`() {
+            val oldestPull = generateSamplePull(1)
+            val priorityPull = Pull(2, 2, "Test PR", "",
+                    listOf(Label("Automerge"), Label("Priority")), Branch("", ""), Branch("", ""))
+            val newestPull = generateSamplePull(3)
+            mockRequest(200, "OK", listOf(newestPull, priorityPull, oldestPull))
+            val pull = service.getOldestLabeledRequest()
+            assertThat(pull).isEqualTo(priorityPull)
         }
 
         @Test
