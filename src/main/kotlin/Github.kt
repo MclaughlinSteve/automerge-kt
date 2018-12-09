@@ -18,6 +18,7 @@ const val MERGES = "/merges"
 const val MERGE = "/merge"
 const val COMMITS = "/commits"
 const val CHECK_RUNS = "/check-runs"
+const val STATUS = "/status"
 const val COMMENTS = "/comments"
 
 const val LABEL_REMOVAL_DEFAULT = """
@@ -33,8 +34,8 @@ If none of those seem like the problem, try looking at the logs for more informa
 const val LABEL_REMOVAL_STATUS_CHECKS = """
 Uh oh! It looks like there was a problem trying to automerge this pull request.
 
-It seems likely that this is due to a failing status check. Take a look at your statuses and get
-them passing before reapplying the automerge label.
+It seems likely that this is due to a cancelled or failing status check. Take a look at your statuses and
+ get them passing before reapplying the automerge label.
 """
 
 const val LABEL_REMOVAL_MERGE_CONFLICTS = """
@@ -204,8 +205,6 @@ class GithubService(config: GithubConfig) {
     }
 
     /**
-     * TODO: This function is specific to the applications I'm using this on. Will be updated to be more general soon
-     *
      * Checks to see whether there are any outstanding status requests (things like travis builds for example)
      *
      * If the merge status is "BLOCKED" and there are no outstanding status checks, something else is causing
@@ -214,21 +213,79 @@ class GithubService(config: GithubConfig) {
      *
      * @param pull the pull request for which the statuses are being determined
      */
-    fun assessStatusChecks(pull: Pull) {
-        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + CHECK_RUNS
-        val (_, _, result) = url.httpGet().header(headers).responseString()
-        when (result) {
-            is Result.Failure -> logFailure(result)
-            is Result.Success -> {
-                val statusCheck: Check = mapper.readValue(result.get())
-                if (statusCheck.checkRuns.any { it.conclusion == "failure" || it.conclusion == "action_required" }) {
-                    removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
-                } else if (statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }) {
-                    removeLabel(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
-                }
-            }
+    fun assessStatusAndChecks(pull: Pull) {
+        val statusCheck = getStatusChecks(pull) ?: return
+        val status = getStatuses(pull) ?: return
+
+        if (statusCheck.checkRuns.any { checkFailure(it.conclusion) }) {
+            removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
+        } else if (status.state == "failure" || status.state == "error") {
+            removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
+        } else if (checksCompleted(statusCheck) && statusesCompleted(status)) {
+            removeLabel(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
         }
     }
+
+    /**
+     * Get the status summary for a pull request
+     *
+     * @param pull the pull request to get the status summary for
+     * @return the status summary for the pull request
+     */
+    private fun getStatuses(pull: Pull): Status? {
+        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + STATUS
+        val (_, _, result) = url.httpGet().header(headers).responseString()
+        return when (result) {
+            is Result.Failure -> {
+                logFailure(result)
+                null
+            }
+            is Result.Success -> mapper.readValue<Status>(result.get())
+        }
+    }
+
+    /**
+     * Get the "check-runs" summary for a pull request
+     *
+     * @param pull the pull request to get the "check-runs" for
+     * @return the "check-runs" summary for the pull request
+     */
+    private fun getStatusChecks(pull: Pull): Check? {
+        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + CHECK_RUNS
+        val (_, _, result) = url.httpGet().header(headers).responseString()
+        return when (result) {
+            is Result.Failure -> {
+                logFailure(result)
+                null
+            }
+            is Result.Success -> mapper.readValue<Check>(result.get())
+        }
+    }
+
+    /**
+     * Check if the conclusion for a check-run is a failure of some sort
+     *
+     * @param conclusion the conclusion for the check-run provided by github
+     */
+    private fun checkFailure(conclusion: String?) =
+            listOf("failure", "action_required", "cancelled", "timed_out").contains(conclusion)
+
+    /**
+     * Check if all "check-runs" are completed.
+     *
+     * @param statusCheck the check-runs summary data from github
+     * @return true if there are no check-runs or if all of the check-runs have completed
+     */
+    private fun checksCompleted(statusCheck: Check) =
+            statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }
+
+    /**
+     * Check if all statuses are completed
+     *
+     * @param status the status summary data from github
+     * @return true if there are no statuses or if all statuses have completed (a.k.a. are not pending)
+     */
+    private fun statusesCompleted(status: Status) = status.count == 0 || status.state != "pending"
 
     /**
      * Removes the specified automerge label from a pull request

@@ -60,7 +60,7 @@ private fun executeAutomerge(service: GithubService) {
         when (reviewStatus) {
             MergeState.CLEAN -> service.squashMerge(pull)
             MergeState.BEHIND -> service.updateBranch(pull)
-            MergeState.BLOCKED -> service.assessStatusChecks(pull)
+            MergeState.BLOCKED -> service.assessStatusAndChecks(pull)
             MergeState.UNMERGEABLE -> service.removeLabel(pull, LabelRemovalReason.MERGE_CONFLICTS)
             MergeState.BAD -> service.removeLabel(pull)
             MergeState.WAITING -> Unit // Do nothing
