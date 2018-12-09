@@ -34,8 +34,8 @@ If none of those seem like the problem, try looking at the logs for more informa
 const val LABEL_REMOVAL_STATUS_CHECKS = """
 Uh oh! It looks like there was a problem trying to automerge this pull request.
 
-It seems likely that this is due to a cancelled or failing status check. Take a look at your statuses and get
-them passing before reapplying the automerge label.
+It seems likely that this is due to a cancelled or failing status check. Take a look at your statuses and
+ get them passing before reapplying the automerge label.
 """
 
 const val LABEL_REMOVAL_MERGE_CONFLICTS = """
@@ -268,10 +268,7 @@ class GithubService(config: GithubConfig) {
      * @param conclusion the conclusion for the check-run provided by github
      */
     private fun checkFailure(conclusion: String?) =
-            conclusion == "failure" ||
-                    conclusion == "action_required" ||
-                    conclusion == "cancelled" ||
-                    conclusion == "timed_out"
+            listOf("failure", "action_required", "cancelled", "timed_out").contains(conclusion)
 
     /**
      * Check if all "check-runs" are completed.
