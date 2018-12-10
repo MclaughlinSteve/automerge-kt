@@ -309,11 +309,12 @@ class GithubService(config: GithubConfig) {
             is Result.Success -> {
                 val labels: List<Label> = mapper.readValue(result.get())
                 if (labels.any { it.name == label }) {
-                    removeLabel(pull, label, reason)
+                    removeLabel(pull, label)
                 }
                 if (labels.any { it.name == priority }) {
-                    removeLabel(pull, priority, reason)
+                    removeLabel(pull, priority)
                 }
+                handleLabelRemoval(pull, reason)
             }
         }
     }
@@ -323,17 +324,13 @@ class GithubService(config: GithubConfig) {
      *
      * @param pull the pull request for which the label will be removed
      * @param label the label that will be removed
-     * @param reason some information about why the label is removed which will be commented on the PR
      */
-    private fun removeLabel(pull: Pull, label: String, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
+    private fun removeLabel(pull: Pull, label: String) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
-            is Result.Success -> {
-                logger.info { "Successfully removed label $label from PR: ${pull.title}" }
-                handleLabelRemoval(pull, reason)
-            }
+            is Result.Success -> logger.info { "Successfully removed label $label from PR: ${pull.title}" }
         }
     }
 
