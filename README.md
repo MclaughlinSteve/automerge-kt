@@ -60,7 +60,7 @@ single labeled PR at once rather than dealing with PRs one-by-one from oldest to
 #### Acknowledgements
 
 I based this on a similar project that a former coworker built using clojure that does essentially the same thing. 
-I wanted to write something in kotlin and needed a few things specific to my new team.
+I wanted to write something in kotlin and wanted to learn something and build out some additional features.
 Thanks to [Adam](https://github.com/AdamReifsneider) for the inspiration. 
 Check out his project [here](https://github.com/AdamReifsneider/pull-automerge).
 
