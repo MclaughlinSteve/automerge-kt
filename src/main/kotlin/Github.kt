@@ -165,7 +165,7 @@ class GithubService(config: GithubConfig) {
         when (result) {
             is Result.Failure -> {
                 logger.error { "Failed to squash merge $request" }
-                removeLabel(pull)
+                removeLabels(pull)
                 logFailure(result)
             }
             is Result.Success -> {
@@ -226,11 +226,11 @@ class GithubService(config: GithubConfig) {
         val status = getStatuses(pull) ?: return
 
         if (statusCheck.checkRuns.any { checkFailure(it.conclusion) }) {
-            removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
+            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
         } else if (status.state == "failure" || status.state == "error") {
-            removeLabel(pull, LabelRemovalReason.STATUS_CHECKS)
+            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
         } else if (checksCompleted(statusCheck) && statusesCompleted(status)) {
-            removeLabel(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
         }
     }
 
@@ -296,17 +296,42 @@ class GithubService(config: GithubConfig) {
     private fun statusesCompleted(status: Status) = status.count == 0 || status.state != "pending"
 
     /**
-     * Removes the specified automerge label from a pull request
+     * Removes the Automerge and Priority labels from a pull request if they exist
      *
      * @param pull the pull request for which the label will be removed
+     * @param reason some information about why the label is removed which will be commented on the PR
      */
-    fun removeLabel(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
+    fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
+        val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS
+        val (_, _, result) = url.httpGet().header(headers).responseString()
+        when (result) {
+            is Result.Failure -> logFailure(result)
+            is Result.Success -> {
+                val labels: List<Label> = mapper.readValue(result.get())
+                if (labels.any { it.name == label }) {
+                    removeLabel(pull, label, reason)
+                }
+                if (labels.any { it.name == priority }) {
+                    removeLabel(pull, priority, reason)
+                }
+            }
+        }
+    }
+
+    /**
+     * Removes the specified label from a pull request
+     *
+     * @param pull the pull request for which the label will be removed
+     * @param label the label that will be removed
+     * @param reason some information about why the label is removed which will be commented on the PR
+     */
+    private fun removeLabel(pull: Pull, label: String, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
-                logger.info { "Successfully removed label from PR: ${pull.title}" }
+                logger.info { "Successfully removed label $label from PR: ${pull.title}" }
                 handleLabelRemoval(pull, reason)
             }
         }
