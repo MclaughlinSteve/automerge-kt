@@ -308,15 +308,29 @@ class GithubService(config: GithubConfig) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
                 val labels: List<Label> = mapper.readValue(result.get())
-                if (labels.any { it.name == label }) {
-                    removeLabel(pull, label)
+                val labelsRemoved = listOf(label, priority).map { it -> removeLabelIfItExists(labels, pull, it) }
+                if (labelsRemoved.any()) {
+                    handleLabelRemoval(pull, reason)
                 }
-                if (labels.any { it.name == priority }) {
-                    removeLabel(pull, priority)
-                }
-                handleLabelRemoval(pull, reason)
             }
         }
+    }
+
+    /**
+     * Remove a specified label from a pull request if it exists
+     *
+     * @param labels the list of labels on the pull request
+     * @param pull the pull request to remove any labels from
+     * @param labelName the name of the label to remove if it exists
+     * @return true if the label was successfully removed
+     */
+    private fun removeLabelIfItExists(labels: List<Label>, pull: Pull, labelName: String) {
+        val successfullyRemovedLabel = if (labels.any { it.name == labelName }) {
+            removeLabel(pull, labelName);
+        } else {
+            false
+        }
+        return successfullyRemovedLabel
     }
 
     /**
@@ -324,13 +338,20 @@ class GithubService(config: GithubConfig) {
      *
      * @param pull the pull request for which the label will be removed
      * @param label the label that will be removed
+     * @return true if removing the label was successful, otherwise false
      */
     private fun removeLabel(pull: Pull, label: String) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
-        when (result) {
-            is Result.Failure -> logFailure(result)
-            is Result.Success -> logger.info { "Successfully removed label $label from PR: ${pull.title}" }
+        return when (result) {
+            is Result.Failure -> {
+                logFailure(result)
+                false
+            }
+            is Result.Success -> {
+                logger.info { "Successfully removed label $label from PR: ${pull.title}" }
+                true
+            }
         }
     }
 
