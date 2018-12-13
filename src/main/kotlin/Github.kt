@@ -75,7 +75,7 @@ class GithubService(config: GithubConfig) {
      */
     fun getOldestLabeledRequest(): Pull? {
         val url = baseUrl + PULLS
-        val (_, _, result) = url.httpGet().header(headers).responseString()
+        val (_, _, result) = get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -109,7 +109,7 @@ class GithubService(config: GithubConfig) {
      */
     fun getReviewStatus(pull: Pull): MergeState {
         val url = baseUrl + PULLS + DELIMITER + pull.number
-        val (_, _, result) = url.httpGet().header(headers).responseString()
+        val (_, _, result) = get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -161,7 +161,7 @@ class GithubService(config: GithubConfig) {
     fun squashMerge(pull: Pull) {
         val url = baseUrl + PULLS + DELIMITER + pull.number + MERGE
         val body = CommitBody(pull.title)
-        val (request, _, result) = url.httpPut().body(body.toJsonString()).header(headers).responseString()
+        val (request, _, result) = put(url, body)
         when (result) {
             is Result.Failure -> {
                 logger.error { "Failed to squash merge $request" }
@@ -184,7 +184,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun deleteBranch(pull: Pull) {
         val url = baseUrl + "/git/refs/heads/" + pull.head.ref
-        val (_, _, result) = url.httpDelete().header(headers).responseString()
+        val (_, _, result) = delete(url)
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -203,7 +203,7 @@ class GithubService(config: GithubConfig) {
     fun updateBranch(pull: Pull) {
         val url = baseUrl + MERGES
         val body = UpdateBody(pull.base.ref, pull.head.ref)
-        val (_, _, result) = url.httpPost().body(body.toJsonString()).header(headers).responseString()
+        val (_, _, result) = post(url, body)
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -242,7 +242,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun getStatuses(pull: Pull): Status? {
         val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + STATUS
-        val (_, _, result) = url.httpGet().header(headers).responseString()
+        val (_, _, result) = get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -260,7 +260,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun getStatusChecks(pull: Pull): Check? {
         val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + CHECK_RUNS
-        val (_, _, result) = url.httpGet().header(headers).responseString()
+        val (_, _, result) = get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -303,7 +303,7 @@ class GithubService(config: GithubConfig) {
      */
     fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS
-        val (_, _, result) = url.httpGet().header(headers).responseString()
+        val (_, _, result) = get(url)
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -325,12 +325,11 @@ class GithubService(config: GithubConfig) {
      * @return true if the label was successfully removed
      */
     private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String): Boolean {
-        val successfullyRemovedLabel = if (labels.any { it.name == labelName }) {
+        return if (labels.any { it.name == labelName }) {
             removeLabel(pull, labelName)
         } else {
             false
         }
-        return successfullyRemovedLabel
     }
 
     /**
@@ -342,7 +341,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun removeLabel(pull: Pull, label: String): Boolean {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
-        val (_, _, result) = url.httpDelete().header(headers).responseString()
+        val (_, _, result) = delete(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -377,7 +376,7 @@ class GithubService(config: GithubConfig) {
     private fun postComment(pull: Pull, message: String) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + COMMENTS
         val commentBody = CommentBody(message)
-        val (_, _, result) = url.httpPost().body(commentBody.toJsonString()).header(headers).responseString()
+        val (_, _, result) = post(url, commentBody)
         when (result) {
             is Result.Failure -> logFailure(result, "Unable to post comment")
             is Result.Success -> logger.info { "Successfully commented on PR: ${pull.title} with message $message" }
@@ -399,4 +398,34 @@ class GithubService(config: GithubConfig) {
                 | ${result.getException()}
                 |======================
             """.trimIndent() }
+
+    /**
+     * Helper function for making http GET requests
+     * @param url the url to make the request on
+     * @return Triple<Request, Response, Result<String, FuelError>>
+     */
+    private fun get(url: String) = url.httpGet().header(headers).responseString()
+
+    /**
+     * Helper function for making http DELETE requests
+     * @param url the url to make the request on
+     * @return Triple<Request, Response, Result<String, FuelError>>
+     */
+    private fun delete(url: String) = url.httpDelete().header(headers).responseString()
+
+    /**
+     * Helper function for making http PUT requests
+     * @param url the url to make the request on
+     * @param body the body of the request
+     * @return Triple<Request, Response, Result<String, FuelError>>
+     */
+    private fun put(url: String, body: Any) = url.httpPut().body(body.toJsonString()).header(headers).responseString()
+
+    /**
+     * Helper function for making http POST requests
+     * @param url the url to make the request on
+     * @param body the body of the request
+     * @return Triple<Request, Response, Result<String, FuelError>>
+     */
+    private fun post(url: String, body: Any) = url.httpPost().body(body.toJsonString()).header(headers).responseString()
 }
