@@ -308,7 +308,7 @@ class GithubService(config: GithubConfig) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
                 val labels: List<Label> = mapper.readValue(result.get())
-                val labelsRemoved = listOf(label, priority).map { it -> removeLabelIfItExists(labels, pull, it) }
+                val labelsRemoved = listOf(label, priority).map { it -> removeLabelIfExists(labels, pull, it) }
                 if (labelsRemoved.any()) {
                     handleLabelRemoval(pull, reason)
                 }
@@ -324,24 +324,13 @@ class GithubService(config: GithubConfig) {
      * @param labelName the name of the label to remove if it exists
      * @return true if the label was successfully removed
      */
-    private fun removeLabelIfItExists(labels: List<Label>, pull: Pull, labelName: String): Boolean {
+    private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String): Boolean {
         val successfullyRemovedLabel = if (labels.any { it.name == labelName }) {
             removeLabel(pull, labelName)
         } else {
             false
         }
-        dumbFunctionForFailingCC(true, true, false, true, false, false, false)
         return successfullyRemovedLabel
-    }
-
-    private fun dumbFunctionForFailingCC(name: Boolean,
-                                         age: Boolean,
-                                         other: Boolean,
-                                         food: Boolean,
-                                         poop: Boolean,
-                                         foo: Boolean,
-                                         bar: Boolean) {
-        println(name, age, other, food, poop, foo, bar)
     }
 
     /**
