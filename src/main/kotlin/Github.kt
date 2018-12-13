@@ -326,7 +326,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun removeLabelIfItExists(labels: List<Label>, pull: Pull, labelName: String): Boolean {
         val successfullyRemovedLabel = if (labels.any { it.name == labelName }) {
-            removeLabel(pull, labelName);
+            removeLabel(pull, labelName)
         } else {
             false
         }
