@@ -276,13 +276,8 @@ class GithubService(config: GithubConfig) {
      * @param labelName the name of the label to remove if it exists
      * @return true if the label was successfully removed
      */
-    private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String): Boolean {
-        return if (labels.any { it.name == labelName }) {
-            removeLabel(pull, labelName)
-        } else {
-            false
-        }
-    }
+    private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String) =
+        labels.any { it.name == labelName } && removeLabel(pull, labelName)
 
     /**
      * Removes the specified label from a pull request
