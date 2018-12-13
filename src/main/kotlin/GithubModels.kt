@@ -138,7 +138,7 @@ data class Label(val name: String)
  */
 data class CommitBody(
     @JsonProperty("commit_title") val commitTitle: String,
-    @JsonProperty("merge_method") val mergeMethod: String = "squash"
+    @JsonProperty("merge_method") val mergeMethod: String
 )
 
 /**
