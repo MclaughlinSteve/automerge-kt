@@ -286,7 +286,7 @@ class GithubService(config: GithubConfig) {
      * @return true if removing the label was successful, otherwise false
      */
     private fun removeLabel(pull: Pull, label: String): Boolean {
-        val url = "$baseUrl/$ISSUES/${pull.number}/LABELS/$label"
+        val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS/$label"
         val (_, _, result) = http.delete(url)
         return when (result) {
             is Result.Failure -> {
