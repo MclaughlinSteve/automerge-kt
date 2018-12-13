@@ -17,8 +17,12 @@ By default `Automerge` will be used.
 high priority. By default `Priority Automerge` will be used. The `Priority Automerge` label allows a PR to
 take precedence in the merge order.
 
+(Optional) Set the `MERGE_TYPE` environment variable to your desired merge type (Valid options are "merge", "squash",
+ and "rebase"). This will determine the type of merge that is performed when merging pull requests. By default, "squash" 
+ will be used
+
 Replace the repository url in the [config.yml](src/main/resources/config.yml) with the information relative to your 
-project (i.e. the urls to as many repos as you want to run it across).
+project (i.e. a list of the urls to as many repos as you want to run it across in parallel).
 
 __For local running only__: If you want to change the rate that it runs, update the `INTERVAL` constant in 
 [Main.kt](src/main/kotlin/Main.kt).
