@@ -330,7 +330,18 @@ class GithubService(config: GithubConfig) {
         } else {
             false
         }
+        dumbFunctionForFailingCC(true, true, false, true, false, false, false)
         return successfullyRemovedLabel
+    }
+
+    private fun dumbFunctionForFailingCC(name: Boolean,
+                                         age: Boolean,
+                                         other: Boolean,
+                                         food: Boolean,
+                                         poop: Boolean,
+                                         foo: Boolean,
+                                         bar: Boolean) {
+        println(name, age, other, food, poop, foo, bar)
     }
 
     /**
