@@ -324,7 +324,7 @@ class GithubService(config: GithubConfig) {
      * @param labelName the name of the label to remove if it exists
      * @return true if the label was successfully removed
      */
-    private fun removeLabelIfItExists(labels: List<Label>, pull: Pull, labelName: String) {
+    private fun removeLabelIfItExists(labels: List<Label>, pull: Pull, labelName: String): Boolean {
         val successfullyRemovedLabel = if (labels.any { it.name == labelName }) {
             removeLabel(pull, labelName);
         } else {
@@ -340,7 +340,7 @@ class GithubService(config: GithubConfig) {
      * @param label the label that will be removed
      * @return true if removing the label was successful, otherwise false
      */
-    private fun removeLabel(pull: Pull, label: String) {
+    private fun removeLabel(pull: Pull, label: String): Boolean {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
         val (_, _, result) = url.httpDelete().header(headers).responseString()
         return when (result) {
