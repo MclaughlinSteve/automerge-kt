@@ -1,10 +1,6 @@
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kittinunf.fuel.core.FuelError
-import com.github.kittinunf.fuel.httpDelete
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.fuel.httpPost
-import com.github.kittinunf.fuel.httpPut
 import com.github.kittinunf.result.Result
 import mu.KotlinLogging
 import java.time.Instant
@@ -20,37 +16,6 @@ const val COMMITS = "/commits"
 const val CHECK_RUNS = "/check-runs"
 const val STATUS = "/status"
 const val COMMENTS = "/comments"
-
-const val LABEL_REMOVAL_DEFAULT = """
-Uh oh! It looks like there was a problem trying to automerge this pull request.
-Here are some possible reasons why the label may have been removed:
-- There are outstanding reviews that need to be addressed before merging is possible
-- There are merge conflicts with the base branch
-- There are status checks failing
-
-If none of those seem like the problem, try looking at the logs for more information.
-"""
-
-const val LABEL_REMOVAL_STATUS_CHECKS = """
-Uh oh! It looks like there was a problem trying to automerge this pull request.
-
-It seems likely that this is due to a cancelled or failing status check. Take a look at your statuses and
- get them passing before reapplying the automerge label.
-"""
-
-const val LABEL_REMOVAL_MERGE_CONFLICTS = """
-Uh oh! It looks like there was a problem trying to automerge this pull request.
-
-It seems likely that there are merge conflicts with the base branch that can't automatically be resolved.
-Resolve any conflicts with the base branch before reapplying the automerge label.
-"""
-
-const val LABEL_REMOVAL_OUTSTANDING_REVIEWS = """
-Uh oh! It looks like there was a problem trying to automerge this pull request.
-
-It seems likely that there are some outstanding reviews that still need to be addressed before merging is possible.
-Address any remaining reviews before reapplying the automerge label
-"""
 
 val mapper = jacksonObjectMapper()
 
@@ -68,6 +33,7 @@ class GithubService(config: GithubConfig) {
     private val headers = config.headers
     private val label = config.label
     private val priority = config.priority
+    private val http = Http(headers)
 
     /**
      * Return the oldest pull request with the specified automerge label
@@ -75,7 +41,7 @@ class GithubService(config: GithubConfig) {
      */
     fun getOldestLabeledRequest(): Pull? {
         val url = baseUrl + PULLS
-        val (_, _, result) = get(url)
+        val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -109,7 +75,7 @@ class GithubService(config: GithubConfig) {
      */
     fun getReviewStatus(pull: Pull): MergeState {
         val url = baseUrl + PULLS + DELIMITER + pull.number
-        val (_, _, result) = get(url)
+        val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -161,7 +127,7 @@ class GithubService(config: GithubConfig) {
     fun squashMerge(pull: Pull) {
         val url = baseUrl + PULLS + DELIMITER + pull.number + MERGE
         val body = CommitBody(pull.title)
-        val (request, _, result) = put(url, body)
+        val (request, _, result) = http.put(url, body)
         when (result) {
             is Result.Failure -> {
                 logger.error { "Failed to squash merge $request" }
@@ -184,7 +150,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun deleteBranch(pull: Pull) {
         val url = baseUrl + "/git/refs/heads/" + pull.head.ref
-        val (_, _, result) = delete(url)
+        val (_, _, result) = http.delete(url)
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -203,7 +169,7 @@ class GithubService(config: GithubConfig) {
     fun updateBranch(pull: Pull) {
         val url = baseUrl + MERGES
         val body = UpdateBody(pull.base.ref, pull.head.ref)
-        val (_, _, result) = post(url, body)
+        val (_, _, result) = http.post(url, body)
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -222,8 +188,8 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request for which the statuses are being determined
      */
     fun assessStatusAndChecks(pull: Pull) {
-        val statusCheck = getStatusChecks(pull) ?: return
-        val status = getStatuses(pull) ?: return
+        val statusCheck = getStatusOrChecks<Check>(pull, CHECK_RUNS) ?: return
+        val status = getStatusOrChecks<Status>(pull, STATUS) ?: return
 
         if (statusCheck.checkRuns.any { checkFailure(it.conclusion) }) {
             removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
@@ -235,38 +201,21 @@ class GithubService(config: GithubConfig) {
     }
 
     /**
-     * Get the status summary for a pull request
+     * Get the status summary or "check-runs" summary for a pull request
      *
-     * @param pull the pull request to get the status summary for
-     * @return the status summary for the pull request
+     * @param pull the pull request to get the status or "check-runs" for
+     * @param type the type that we're getting (Status or Check_runs)
+     * @return the status summary or "check-runs" summary for the pull request
      */
-    private fun getStatuses(pull: Pull): Status? {
-        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + STATUS
-        val (_, _, result) = get(url)
+    private inline fun <reified E> getStatusOrChecks(pull: Pull, type: String): E? {
+        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + type
+        val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
                 null
             }
-            is Result.Success -> mapper.readValue<Status>(result.get())
-        }
-    }
-
-    /**
-     * Get the "check-runs" summary for a pull request
-     *
-     * @param pull the pull request to get the "check-runs" for
-     * @return the "check-runs" summary for the pull request
-     */
-    private fun getStatusChecks(pull: Pull): Check? {
-        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + CHECK_RUNS
-        val (_, _, result) = get(url)
-        return when (result) {
-            is Result.Failure -> {
-                logFailure(result)
-                null
-            }
-            is Result.Success -> mapper.readValue<Check>(result.get())
+            is Result.Success -> mapper.readValue<E>(result.get())
         }
     }
 
@@ -303,7 +252,7 @@ class GithubService(config: GithubConfig) {
      */
     fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS
-        val (_, _, result) = get(url)
+        val (_, _, result) = http.get(url)
         when (result) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
@@ -341,7 +290,7 @@ class GithubService(config: GithubConfig) {
      */
     private fun removeLabel(pull: Pull, label: String): Boolean {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
-        val (_, _, result) = delete(url)
+        val (_, _, result) = http.delete(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -376,7 +325,7 @@ class GithubService(config: GithubConfig) {
     private fun postComment(pull: Pull, message: String) {
         val url = baseUrl + ISSUES + DELIMITER + pull.number + COMMENTS
         val commentBody = CommentBody(message)
-        val (_, _, result) = post(url, commentBody)
+        val (_, _, result) = http.post(url, commentBody)
         when (result) {
             is Result.Failure -> logFailure(result, "Unable to post comment")
             is Result.Success -> logger.info { "Successfully commented on PR: ${pull.title} with message $message" }
@@ -398,34 +347,4 @@ class GithubService(config: GithubConfig) {
                 | ${result.getException()}
                 |======================
             """.trimIndent() }
-
-    /**
-     * Helper function for making http GET requests
-     * @param url the url to make the request on
-     * @return Triple<Request, Response, Result<String, FuelError>>
-     */
-    private fun get(url: String) = url.httpGet().header(headers).responseString()
-
-    /**
-     * Helper function for making http DELETE requests
-     * @param url the url to make the request on
-     * @return Triple<Request, Response, Result<String, FuelError>>
-     */
-    private fun delete(url: String) = url.httpDelete().header(headers).responseString()
-
-    /**
-     * Helper function for making http PUT requests
-     * @param url the url to make the request on
-     * @param body the body of the request
-     * @return Triple<Request, Response, Result<String, FuelError>>
-     */
-    private fun put(url: String, body: Any) = url.httpPut().body(body.toJsonString()).header(headers).responseString()
-
-    /**
-     * Helper function for making http POST requests
-     * @param url the url to make the request on
-     * @param body the body of the request
-     * @return Triple<Request, Response, Result<String, FuelError>>
-     */
-    private fun post(url: String, body: Any) = url.httpPost().body(body.toJsonString()).header(headers).responseString()
 }
