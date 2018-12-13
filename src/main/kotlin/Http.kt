@@ -52,5 +52,4 @@ class Http(private val headers: Map<String, String>) {
      */
     private fun requestWithBody(request: Request, body: Any) =
             request.body(body.toJsonString()).header(headers).responseString()
-
 }
