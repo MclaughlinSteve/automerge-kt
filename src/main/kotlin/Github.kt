@@ -6,18 +6,17 @@ import mu.KotlinLogging
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
-const val DELIMITER = "/"
-const val PULLS = "/pulls"
-const val LABELS = "/labels"
-const val ISSUES = "/issues"
-const val MERGES = "/merges"
-const val MERGE = "/merge"
-const val COMMITS = "/commits"
-const val COMMENTS = "/comments"
+const val PULLS = "pulls"
+const val LABELS = "labels"
+const val ISSUES = "issues"
+const val MERGES = "merges"
+const val MERGE = "merge"
+const val COMMITS = "commits"
+const val COMMENTS = "comments"
 
 enum class SummaryType(val route: String) {
-    STATUS("/status"),
-    CHECK_RUNS("/check-runs")
+    STATUS("status"),
+    CHECK_RUNS("check-runs")
 }
 
 val mapper = jacksonObjectMapper()
@@ -43,7 +42,7 @@ class GithubService(config: GithubConfig) {
      * @return the oldest labeled pull request or null if there are no labeled pull requests
      */
     fun getOldestLabeledRequest(): Pull? {
-        val url = baseUrl + PULLS
+        val url = "$baseUrl/$PULLS"
         val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
@@ -77,7 +76,7 @@ class GithubService(config: GithubConfig) {
      * @return the merge status of the pull request
      */
     fun getReviewStatus(pull: Pull): MergeState {
-        val url = baseUrl + PULLS + DELIMITER + pull.number
+        val url = "$baseUrl/$PULLS/${pull.number}"
         val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
@@ -128,7 +127,7 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request to be merged
      */
     fun squashMerge(pull: Pull) {
-        val url = baseUrl + PULLS + DELIMITER + pull.number + MERGE
+        val url = "$baseUrl/$PULLS/${pull.number}/$MERGE"
         val body = CommitBody(pull.title)
         val (request, _, result) = http.put(url, body)
         when (result) {
@@ -152,7 +151,7 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request for the branch to be deleted
      */
     private fun deleteBranch(pull: Pull) {
-        val url = baseUrl + "/git/refs/heads/" + pull.head.ref
+        val url = "$baseUrl/git/refs/heads/${pull.head.ref}"
         val (_, _, result) = http.delete(url)
         when (result) {
             is Result.Failure -> logFailure(result)
@@ -170,7 +169,7 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request that contains the current branch and the branch being merged into
      */
     fun updateBranch(pull: Pull) {
-        val url = baseUrl + MERGES
+        val url = "$baseUrl/$MERGES"
         val body = UpdateBody(pull.base.ref, pull.head.ref)
         val (_, _, result) = http.post(url, body)
         when (result) {
@@ -211,7 +210,7 @@ class GithubService(config: GithubConfig) {
      * @return the status summary or "check-runs" summary for the pull request
      */
     private inline fun <reified StatusOrCheck> getStatusOrChecks(pull: Pull, summaryType: SummaryType): StatusOrCheck? {
-        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + summaryType.route
+        val url = "$baseUrl/$COMMITS/${pull.head.sha}/${summaryType.route}"
         val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
@@ -254,7 +253,7 @@ class GithubService(config: GithubConfig) {
      * @param reason some information about why the label is removed which will be commented on the PR
      */
     fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
-        val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS
+        val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS"
         val (_, _, result) = http.get(url)
         when (result) {
             is Result.Failure -> logFailure(result)
@@ -287,7 +286,7 @@ class GithubService(config: GithubConfig) {
      * @return true if removing the label was successful, otherwise false
      */
     private fun removeLabel(pull: Pull, label: String): Boolean {
-        val url = baseUrl + ISSUES + DELIMITER + pull.number + LABELS + DELIMITER + label
+        val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS/$label"
         val (_, _, result) = http.delete(url)
         return when (result) {
             is Result.Failure -> {
@@ -321,7 +320,7 @@ class GithubService(config: GithubConfig) {
      * @param message the message that will be commented
      */
     private fun postComment(pull: Pull, message: String) {
-        val url = baseUrl + ISSUES + DELIMITER + pull.number + COMMENTS
+        val url = "$baseUrl/$ISSUES/${pull.number}/$COMMENTS"
         val commentBody = CommentBody(message)
         val (_, _, result) = http.post(url, commentBody)
         when (result) {
