@@ -260,7 +260,7 @@ class GithubService(config: GithubConfig) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> {
                 val labels: List<Label> = mapper.readValue(result.get())
-                val labelsRemoved = listOf(label, priority).map { it -> removeLabelIfExists(labels, pull, it) }
+                val labelsRemoved = listOf(label, priority).map { removeLabelIfExists(labels, pull, it) }
                 if (labelsRemoved.any()) {
                     handleLabelRemoval(pull, reason)
                 }
