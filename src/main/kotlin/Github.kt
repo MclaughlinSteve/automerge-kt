@@ -13,9 +13,12 @@ const val ISSUES = "/issues"
 const val MERGES = "/merges"
 const val MERGE = "/merge"
 const val COMMITS = "/commits"
-const val CHECK_RUNS = "/check-runs"
-const val STATUS = "/status"
 const val COMMENTS = "/comments"
+
+enum class SummaryType(val route: String) {
+    STATUS("/status"),
+    CHECK_RUNS("/check-runs")
+}
 
 val mapper = jacksonObjectMapper()
 
@@ -188,8 +191,8 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request for which the statuses are being determined
      */
     fun assessStatusAndChecks(pull: Pull) {
-        val statusCheck = getStatusOrChecks<Check>(pull, CHECK_RUNS) ?: return
-        val status = getStatusOrChecks<Status>(pull, STATUS) ?: return
+        val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS) ?: return
+        val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS) ?: return
 
         if (statusCheck.checkRuns.any { checkFailure(it.conclusion) }) {
             removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
@@ -207,15 +210,15 @@ class GithubService(config: GithubConfig) {
      * @param type the type that we're getting (Status or Check_runs)
      * @return the status summary or "check-runs" summary for the pull request
      */
-    private inline fun <reified E> getStatusOrChecks(pull: Pull, type: String): E? {
-        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + type
+    private inline fun <reified StatusOrCheck> getStatusOrChecks(pull: Pull, summaryType: SummaryType): StatusOrCheck? {
+        val url = baseUrl + COMMITS + DELIMITER + pull.head.sha + summaryType.route
         val (_, _, result) = http.get(url)
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
                 null
             }
-            is Result.Success -> mapper.readValue<E>(result.get())
+            is Result.Success -> mapper.readValue<StatusOrCheck>(result.get())
         }
     }
 

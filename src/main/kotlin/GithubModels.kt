@@ -36,6 +36,11 @@ data class StatusCheck(
 )
 
 /**
+ * Interface for statuses and check-runs used for better type bounding
+ */
+interface StatusOrCheck
+
+/**
  * Data class used to represent information about github's checks (e.g. travis status checks)
  * @property count the number of checks for a given pull request
  * @property checkRuns a list of status checks that have or are being run
@@ -44,7 +49,7 @@ data class StatusCheck(
 data class Check(
     @JsonProperty("total_count") val count: Int,
     @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
-)
+) : StatusOrCheck
 
 /**
  * Data class used to represent information about a github status
@@ -72,7 +77,7 @@ data class Status(
     val state: String,
     @JsonProperty("total_count") val count: Int,
     val statuses: List<StatusItem>
-)
+) : StatusOrCheck
 
 /**
  * Data class used to represent relevant information about a pull request's merge status
