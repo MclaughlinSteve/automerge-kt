@@ -35,6 +35,7 @@ class GithubService(config: GithubConfig) {
     private val headers = config.headers
     private val label = config.label
     private val priority = config.priority
+    private val mergeType = config.mergeType
     private val http = Http(headers)
 
     /**
@@ -128,7 +129,7 @@ class GithubService(config: GithubConfig) {
      */
     fun squashMerge(pull: Pull) {
         val url = "$baseUrl/$PULLS/${pull.number}/$MERGE"
-        val body = CommitBody(pull.title)
+        val body = CommitBody(pull.title, mergeType)
         val (request, _, result) = http.put(url, body)
         when (result) {
             is Result.Failure -> {
@@ -206,7 +207,7 @@ class GithubService(config: GithubConfig) {
      * Get the status summary or "check-runs" summary for a pull request
      *
      * @param pull the pull request to get the status or "check-runs" for
-     * @param type the type that we're getting (Status or Check_runs)
+     * @param summaryType the type that we're getting (Status or Check_runs)
      * @return the status summary or "check-runs" summary for the pull request
      */
     private inline fun <reified StatusOrCheck> getStatusOrChecks(pull: Pull, summaryType: SummaryType): StatusOrCheck? {
