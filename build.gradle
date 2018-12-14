@@ -52,7 +52,7 @@ jacocoTestReport {
 
 jacoco {
     toolVersion = "0.8.2"
-    reportsDir = file("$buildDir/customJacocoReportDir")
+    reportsDir = file("$buildDir/reports")
     applyTo junitPlatformTest
 }
 
