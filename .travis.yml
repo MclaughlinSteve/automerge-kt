@@ -6,3 +6,6 @@ jdk:
 script:
   - ./gradlew ktlint
   - ./gradlew test --console=plain --info
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
