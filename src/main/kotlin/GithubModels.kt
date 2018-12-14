@@ -134,7 +134,7 @@ data class Label(val name: String)
 /**
  * The body of the request used to perform a merge into the base branch
  * @property commitTitle the title of the commit that will be merged
- * @property mergeMethod the method of merging to be used - Default: "squash"
+ * @property mergeMethod the method of merging to be used
  */
 data class CommitBody(
     @JsonProperty("commit_title") val commitTitle: String,

@@ -58,7 +58,7 @@ private fun executeAutomerge(service: GithubService) {
     reviewStatus?.let {
         logger.info { "Status is $reviewStatus" }
         when (reviewStatus) {
-            MergeState.CLEAN -> service.squashMerge(pull)
+            MergeState.CLEAN -> service.merge(pull)
             MergeState.BEHIND -> service.updateBranch(pull)
             MergeState.BLOCKED -> service.assessStatusAndChecks(pull)
             MergeState.UNMERGEABLE -> service.removeLabels(pull, LabelRemovalReason.MERGE_CONFLICTS)

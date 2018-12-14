@@ -118,27 +118,27 @@ class GithubService(config: GithubConfig) {
     }
 
     /**
-     * Squash merge the specified pull request and delete the branch. If there is a problem merging,
+     * Merge the specified pull request and delete the branch. If there is a problem merging,
      * the label will be removed from that pull request so the program can attempt to merge another
      * branch that has no issues
      *
-     * This function is essentially just hitting the "Squash and merge" button on github
+     * This function is essentially just hitting the "Merge" button on github
      * and then deleting the branch afterward
      *
      * @param pull the pull request to be merged
      */
-    fun squashMerge(pull: Pull) {
+    fun merge(pull: Pull) {
         val url = "$baseUrl/$PULLS/${pull.number}/$MERGE"
         val body = CommitBody(pull.title, mergeType)
         val (request, _, result) = http.put(url, body)
         when (result) {
             is Result.Failure -> {
-                logger.error { "Failed to squash merge $request" }
+                logger.error { "Failed to merge $request" }
                 removeLabels(pull)
                 logFailure(result)
             }
             is Result.Success -> {
-                logger.info { "Successfully squash merged ${pull.title}!" }
+                logger.info { "Successfully merged ${pull.title}!" }
                 deleteBranch(pull)
             }
         }
