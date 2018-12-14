@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.com/MclaughlinSteve/automerge-kt.svg?branch=master)](https://travis-ci.com/MclaughlinSteve/automerge-kt)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5ec4d88711d37510eb50/maintainability)](https://codeclimate.com/github/MclaughlinSteve/automerge-kt/maintainability)
 [![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
+[![codecov](https://codecov.io/gh/MclaughlinSteve/automerge-kt/branch/master/graph/badge.svg)](https://codecov.io/gh/MclaughlinSteve/automerge-kt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 # Automerge-kt
