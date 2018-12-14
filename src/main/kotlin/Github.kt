@@ -289,6 +289,7 @@ class GithubService(config: GithubConfig) {
     private fun removeLabel(pull: Pull, label: String): Boolean {
         val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS/$label"
         val (_, _, result) = http.delete(url)
+        newFunction("AHHH")
         return when (result) {
             is Result.Failure -> {
                 logFailure(result)
@@ -299,6 +300,15 @@ class GithubService(config: GithubConfig) {
                 true
             }
         }
+    }
+
+    private fun newFunction(foo: String): Boolean {
+        if (foo == "foo" ) {
+            println("foo")
+        } else {
+            println("Wat")
+        }
+        return foo == "jeff"
     }
 
     /**
