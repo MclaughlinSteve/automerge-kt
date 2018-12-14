@@ -303,7 +303,7 @@ class GithubService(config: GithubConfig) {
     }
 
     private fun newFunction(foo: String): Boolean {
-        if (foo == "foo" ) {
+        if (foo == "foo") {
             println("foo")
         } else {
             println("Wat")
