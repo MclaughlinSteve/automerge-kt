@@ -9,6 +9,7 @@ before_script:
 script:
   - ./gradlew check
   - ./gradlew test --console=plain --info
+  - ./gradlew jacocoTestReport
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
