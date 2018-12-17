@@ -177,15 +177,19 @@ class GithubServiceTest {
             val status = Status("Success", 1, listOf(StatusItem("failure", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
             val branchDetails = BranchDetails("foo", true, Protection(true, RequiredStatusChecks(statusChecks)))
-            mockRequests(
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
                     mapOf(
                             "$baseUrl/$BRANCHES/${pull.base.ref}" to MockResponse(200, "OK", branchDetails),
-                            "$baseUrl/$COMMITS/${pull.head.sha}/check-runs" to MockResponse(200, "OK", checkRuns),
-                            "$baseUrl/$COMMITS/${pull.head.sha}/status" to MockResponse(200, "OK", status)
+                            checksUrl to MockResponse(200, "OK", checkRuns),
+                            statusUrl to MockResponse(200, "OK", status)
                     )
             )
 
             service.assessStatusAndChecks(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
             verify(exactly = 1) { service.removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) }
         }
@@ -198,15 +202,19 @@ class GithubServiceTest {
             val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
             val branchDetails = BranchDetails("foo", true, Protection(true, RequiredStatusChecks(statusChecks)))
-            mockRequests(
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
                     mapOf(
                             "$baseUrl/$BRANCHES/${pull.base.ref}" to MockResponse(200, "OK", branchDetails),
-                            "$baseUrl/$COMMITS/${pull.head.sha}/check-runs" to MockResponse(200, "OK", checkRuns),
-                            "$baseUrl/$COMMITS/${pull.head.sha}/status" to MockResponse(200, "OK", status)
+                            checksUrl to MockResponse(200, "OK", checkRuns),
+                            statusUrl to MockResponse(200, "OK", status)
                     )
             )
 
             service.assessStatusAndChecks(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
             verify(exactly = 0) { service.removeLabels(pull, any()) }
         }
@@ -222,9 +230,10 @@ class GithubServiceTest {
         FuelManager.instance.client = client
     }
 
-    private fun mockRequests(mockRequests: Map<String, MockResponse>) {
+    private fun mockRequests(mockRequests: Map<String, MockResponse>): MockClient {
         val mockClient = MockClient(mockRequests)
         FuelManager.instance.client = mockClient
+        return mockClient
     }
 
     data class MockResponse(val statusCode: Int, val responseMessage: String, val data: Any? = null)
@@ -241,7 +250,7 @@ class GithubServiceTest {
             val response = Response()
             val fullUrl = request.url.toString()
             val (statusCode, responseMessage, data) = mockRequests[fullUrl]!!
-            urlToCalls.merge(fullUrl, 0, Int::plus)
+            urlToCalls.merge(fullUrl, 1, Int::plus)
 
             response.httpStatusCode = statusCode
             response.httpResponseMessage = responseMessage
