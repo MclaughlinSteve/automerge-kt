@@ -193,28 +193,36 @@ class GithubService(config: GithubConfig) {
      */
     fun assessStatusAndChecks(pull: Pull) {
         val required = getRequiredStatusAndChecks(pull)
-        println(required)
 
         val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS) ?: return
         val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS) ?: return
 
-        if (statusCheck.checkRuns.any { checkFailure(it.conclusion) }) {
-            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
-        } else if (status.state == "failure" || status.state == "error") {
-            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
-        } else if (checksCompleted(statusCheck) && statusesCompleted(status)) {
+        val checks = statusCheck.checkRuns.filter { required.contains(it.name) }.map { it.name to checkState(it) }
+        val statuses = status.statuses.filter { required.contains(it.context) }.map { it.context!! to statusState(it) }
+        val knownStatuses = checks.union(statuses).toMap()
+        val unknownStatuses = required.filter { !knownStatuses.keys.contains(it) }.map { it to StatusState.PENDING }
+        val statusMap: Map<String, StatusState> = checks.union(statuses).union(unknownStatuses).toMap()
+
+        if (statusMap.keys.isEmpty() || statusMap.values.all { it == StatusState.SUCCESS }) {
             removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+        } else if (statusMap.containsValue(StatusState.FAILURE)) {
+            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
         }
     }
 
-    fun getRequiredStatusAndChecks(pull: Pull): List<String> {
+    /**
+     * Gets a list of the required status and checks for the branch being merged into
+     *
+     * @param pull the pull request being evaluated. It will contain the branch being merged into
+     */
+    private fun getRequiredStatusAndChecks(pull: Pull): List<String> {
         val url = "$baseUrl/$BRANCHES/${pull.base.ref}"
         val (_, _, result) = http.get(url)
         return when (result) {
-            is Result.Failure -> emptyList() // TODO Maybe log error here instead?
+            is Result.Failure -> emptyList()
             is Result.Success -> {
                 val branchDetails = mapper.readValue<BranchDetails>(result.get())
-                if(!branchDetails.protected) {
+                if (!branchDetails.protected) {
                     emptyList()
                 } else {
                     branchDetails.protection.requiredStatusChecks.contexts
@@ -243,29 +251,34 @@ class GithubService(config: GithubConfig) {
     }
 
     /**
-     * Check if the conclusion for a check-run is a failure of some sort
+     * Determine the state of the check
      *
-     * @param conclusion the conclusion for the check-run provided by github
+     * @param item the check-run provided by github
+     * @return the state of the check
      */
-    private fun checkFailure(conclusion: String?) =
-            listOf("failure", "action_required", "cancelled", "timed_out").contains(conclusion)
+    private fun checkState(item: StatusCheck): StatusState {
+        val failureStates = listOf("failure", "action_required", "cancelled", "timed_out")
+        return when {
+            failureStates.contains(item.conclusion) -> StatusState.FAILURE
+            item.status == "completed" -> StatusState.SUCCESS
+            else -> StatusState.PENDING
+        }
+    }
 
     /**
-     * Check if all "check-runs" are completed.
+     * Determine the state of the status
      *
-     * @param statusCheck the check-runs summary data from github
-     * @return true if there are no check-runs or if all of the check-runs have completed
+     * @param item the status provided by github
+     * @return the state of the status
      */
-    private fun checksCompleted(statusCheck: Check) =
-            statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }
-
-    /**
-     * Check if all statuses are completed
-     *
-     * @param status the status summary data from github
-     * @return true if there are no statuses or if all statuses have completed (a.k.a. are not pending)
-     */
-    private fun statusesCompleted(status: Status) = status.count == 0 || status.state != "pending"
+    private fun statusState(item: StatusItem): StatusState {
+        return when (item.state) {
+            "failure" -> StatusState.FAILURE
+            "error" -> StatusState.FAILURE
+            "pending" -> StatusState.PENDING
+            else -> StatusState.SUCCESS
+        }
+    }
 
     /**
      * Removes the Automerge and Priority labels from a pull request if they exist

@@ -1,6 +1,5 @@
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import jdk.jfr.Enabled
 
 /**
  * Enumerations used to represent states that a github pull request can be in
@@ -12,6 +11,15 @@ enum class MergeState {
     WAITING,
     UNMERGEABLE,
     BAD
+}
+
+/**
+ * Enumerations used to represent the state that a check or status will be in
+ */
+enum class StatusState {
+    SUCCESS,
+    FAILURE,
+    PENDING
 }
 
 /**
@@ -28,11 +36,13 @@ enum class LabelRemovalReason {
 /**
  * Data class used to represent information about github's status checks
  * @property status information about whether a check has completed or not
+ * @property name the name of the status check
  * @property conclusion information about whether a completed check was successful or not
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class StatusCheck(
     val status: String,
+    val name: String,
     val conclusion: String?
 )
 
@@ -104,22 +114,37 @@ data class Branch(
     val sha: String
 )
 
+/**
+ * Data class used to represent relevant information about github's branch details
+ * @property name the name of the branch
+ * @property protected a flag describing if a branch is protected or not
+ * @property protection the protection object describing what type of protections exist on the branch if any
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class BranchDetails(
-        val name: String,
-        val protected: Boolean,
-        val protection: Protection
+    val name: String,
+    val protected: Boolean,
+    val protection: Protection
 )
 
+/**
+ * Data class used to represent relevant information about a branch's protection rules
+ * @property enabled a flag describing if protections are enabled
+ * @property requiredStatusChecks the object with more detail about what checks are required by the protection rules
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Protection(
-        val enabled: Boolean,
-        @JsonProperty("required_status_checks") val requiredStatusChecks: RequiredStatusChecks
+    val enabled: Boolean,
+    @JsonProperty("required_status_checks") val requiredStatusChecks: RequiredStatusChecks
 )
 
+/**
+ * Data class used to represent information about a branch's required status checks
+ * @property contexts a list of checks that are required
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class RequiredStatusChecks(
-        val contexts: List<String>
+    val contexts: List<String>
 )
 
 /**
