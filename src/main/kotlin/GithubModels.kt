@@ -1,5 +1,6 @@
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
+import jdk.jfr.Enabled
 
 /**
  * Enumerations used to represent states that a github pull request can be in
@@ -101,6 +102,24 @@ data class MergeStatus(
 data class Branch(
     val ref: String,
     val sha: String
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BranchDetails(
+        val name: String,
+        val protected: Boolean,
+        val protection: Protection
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Protection(
+        val enabled: Boolean,
+        @JsonProperty("required_status_checks") val requiredStatusChecks: RequiredStatusChecks
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class RequiredStatusChecks(
+        val contexts: List<String>
 )
 
 /**

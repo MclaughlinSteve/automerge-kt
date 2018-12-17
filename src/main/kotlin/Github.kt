@@ -6,6 +6,7 @@ import mu.KotlinLogging
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
+const val BRANCHES = "branches"
 const val PULLS = "pulls"
 const val LABELS = "labels"
 const val ISSUES = "issues"
@@ -191,6 +192,9 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request for which the statuses are being determined
      */
     fun assessStatusAndChecks(pull: Pull) {
+        val required = getRequiredStatusAndChecks(pull)
+        println(required)
+
         val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS) ?: return
         val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS) ?: return
 
@@ -200,6 +204,22 @@ class GithubService(config: GithubConfig) {
             removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
         } else if (checksCompleted(statusCheck) && statusesCompleted(status)) {
             removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+        }
+    }
+
+    fun getRequiredStatusAndChecks(pull: Pull): List<String> {
+        val url = "$baseUrl/$BRANCHES/${pull.base.ref}"
+        val (_, _, result) = http.get(url)
+        return when (result) {
+            is Result.Failure -> emptyList() // TODO Maybe log error here instead?
+            is Result.Success -> {
+                val branchDetails = mapper.readValue<BranchDetails>(result.get())
+                if(!branchDetails.protected) {
+                    emptyList()
+                } else {
+                    branchDetails.protection.requiredStatusChecks.contexts
+                }
+            }
         }
     }
 
