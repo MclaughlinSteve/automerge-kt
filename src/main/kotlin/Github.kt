@@ -194,6 +194,11 @@ class GithubService(config: GithubConfig) {
     fun assessStatusAndChecks(pull: Pull) {
         val required = getRequiredStatusAndChecks(pull)
 
+        if (required.isEmpty()) {
+            removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            return
+        }
+
         val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS) ?: return
         val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS) ?: return
 
@@ -203,7 +208,7 @@ class GithubService(config: GithubConfig) {
         val unknownStatuses = required.filter { !knownStatuses.keys.contains(it) }.map { it to StatusState.PENDING }
         val statusMap: Map<String, StatusState> = checks.union(statuses).union(unknownStatuses).toMap()
 
-        if (statusMap.keys.isEmpty() || statusMap.values.all { it == StatusState.SUCCESS }) {
+        if (statusMap.values.all { it == StatusState.SUCCESS }) {
             removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
         } else if (statusMap.containsValue(StatusState.FAILURE)) {
             removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
