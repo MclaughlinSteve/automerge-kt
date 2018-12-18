@@ -192,7 +192,7 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request for which the statuses are being determined
      */
     fun assessStatusAndChecks(pull: Pull) {
-        val required = getRequiredStatusAndChecks(pull)
+        val required = getRequiredStatusAndChecks(pull) ?: return
 
         if (required.isEmpty()) {
             removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
@@ -220,11 +220,14 @@ class GithubService(config: GithubConfig) {
      *
      * @param pull the pull request being evaluated. It will contain the branch being merged into
      */
-    private fun getRequiredStatusAndChecks(pull: Pull): List<String> {
+    private fun getRequiredStatusAndChecks(pull: Pull): List<String>? {
         val url = "$baseUrl/$BRANCHES/${pull.base.ref}"
         val (_, _, result) = http.get(url)
         return when (result) {
-            is Result.Failure -> emptyList()
+            is Result.Failure -> {
+                logFailure(result, "There was a problem getting the branch protections")
+                null
+            }
             is Result.Success -> {
                 val branchDetails = mapper.readValue<BranchDetails>(result.get())
                 if (!branchDetails.protected) {
