@@ -139,13 +139,12 @@ class GithubServiceTest {
         }
 
         @Test
-        fun `Error getting required statuses removes labels and exits early`() {
+        fun `Error getting required statuses exits early`() {
             val pull = generateSamplePull(101)
-            every { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns Unit
             mockRequest(404, "Not Found")
             service.assessStatusAndChecks(pull)
 
-            verify(exactly = 1) { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) }
+            verify(exactly = 0) { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) }
         }
 
         @Test
