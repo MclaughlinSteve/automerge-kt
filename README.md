@@ -40,7 +40,7 @@ and set the handler to "MainKt::handleLambda"
 - Set your environment variables (Minimum `GITHUB_USER_TOKEN`)
 - Set your memory usage (I'm testing with 256 MB)
 
-Optional: Set the project to run on a periodic basis
+Recommended: Set the project to run on a periodic basis
 - Add a "CloudWatch Event trigger"
 - Set the rule type to "schedule expression" and set the expression 
 (e.g. `rate(5, minute)` This runs the function once every five minutes)
