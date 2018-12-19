@@ -45,13 +45,11 @@ Note: This does not apply for running the job on AWS.
   
 -   Set your memory usage (I'm testing with 256 MB)
 
-
 Recommended: Set the project to run on a periodic basis
 -   Add a "CloudWatch Event trigger"
 
 -   Set the rule type to "schedule expression" and set the expression (e.g. `rate(5, minute)` 
   This runs the function once every five minutes)
-  
   
 ## How it works
 
@@ -68,7 +66,6 @@ it runs the following asynchronously (so that it can run all of the specified re
 
 -   If that PR has no merge conflicts and all github statuses have passed, 
     the PR is squash-merged and the branch is deleted.
-
 
 Note: It only works on a single PR per repository at a time so that it doesn't blow up your CI pipeline with builds 
 for every labeled pull request (Including this because someone thought that it was calling update branch on every 
