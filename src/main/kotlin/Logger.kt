@@ -20,6 +20,9 @@ fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Som
             |
             | Exception:
             | ${result.getException()}
+            |
+            | Stack Trace:
+            | ${result.getException().stackTrace}
             |======================
         """.trimIndent()
         }
