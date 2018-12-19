@@ -34,6 +34,11 @@ enum class LabelRemovalReason {
 }
 
 /**
+ * Interface for status responses used for better type bounding
+ */
+interface StatusResponse
+
+/**
  * Data class used to represent information about github's status checks
  * @property status information about whether a check has completed or not
  * @property name the name of the status check
@@ -44,7 +49,21 @@ data class StatusCheck(
     val status: String,
     val name: String,
     val conclusion: String?
-)
+) : StatusResponse
+
+/**
+ * Data class used to represent information about a github status
+ * (Note: description and context may not need to be nullable)
+ * @property state the state of the status ("success", "pending", "failure", or "error"
+ * @property description A short description of the status
+ * @property context A string label to differentiate this status from the status of other systems
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class StatusItem(
+    val state: String,
+    val description: String?,
+    val context: String
+) : StatusResponse
 
 /**
  * Interface for statuses and check-runs used for better type bounding
@@ -61,20 +80,6 @@ data class Check(
     @JsonProperty("total_count") val count: Int,
     @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
 ) : StatusOrCheck
-
-/**
- * Data class used to represent information about a github status
- * (Note: description and context may not need to be nullable)
- * @property state the state of the status ("success", "pending", "failure", or "error"
- * @property description A short description of the status
- * @property context A string label to differentiate this status from the status of other systems
- */
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class StatusItem(
-    val state: String,
-    val description: String?,
-    val context: String?
-)
 
 /**
  * Data class used to represent information about a github status summary. It has a roll-up of information

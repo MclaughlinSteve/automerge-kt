@@ -4,6 +4,7 @@ import com.github.kittinunf.fuel.core.Request
 import com.github.kittinunf.fuel.core.Response
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -131,26 +132,33 @@ class GithubServiceTest {
         @Test
         fun `No required statuses removes labels and exits early`() {
             val pull = generateSamplePull(100)
-            every { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns Unit
+            mockkConstructor(LabelService::class)
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
+                    Unit
             mockRequest(200, "OK", BranchDetails("foo", false, Protection(false, RequiredStatusChecks(emptyList()))))
 
             service.assessStatusAndChecks(pull)
-            verify(exactly = 1) { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) }
+            verify(exactly = 1) {
+                anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            }
         }
 
         @Test
         fun `Error getting required statuses exits early`() {
             val pull = generateSamplePull(101)
+            mockkConstructor(LabelService::class)
             mockRequest(404, "Not Found")
             service.assessStatusAndChecks(pull)
 
-            verify(exactly = 0) { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) }
+            verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
         }
 
         @Test
         fun `PR is blocked and all statuses are successful causes label to be removed`() {
             val pull = generateSamplePull(102)
-            every { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns Unit
+            mockkConstructor(LabelService::class)
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
+                    Unit
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("success", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -165,13 +173,16 @@ class GithubServiceTest {
 
             service.assessStatusAndChecks(pull)
 
-            verify(exactly = 1) { service.removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) }
+            verify(exactly = 1) {
+                anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            }
         }
 
         @Test
         fun `PR is blocked and at least one status is failing causes label to be removed`() {
             val pull = generateSamplePull(103)
-            every { service.removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns Unit
+            mockkConstructor(LabelService::class)
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns Unit
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("failure", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -190,13 +201,13 @@ class GithubServiceTest {
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
-            verify(exactly = 1) { service.removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) }
+            verify(exactly = 1) { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) }
         }
 
         @Test
         fun `PR is blocked and at least one status is pending does not cause label to be removed`() {
             val pull = generateSamplePull(104)
-            every { service.removeLabels(pull, any()) } returns Unit
+            mockkConstructor(LabelService::class)
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -215,7 +226,7 @@ class GithubServiceTest {
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
-            verify(exactly = 0) { service.removeLabels(pull, any()) }
+            verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
         }
     }
 
