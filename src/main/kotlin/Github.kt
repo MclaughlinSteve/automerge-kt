@@ -199,14 +199,18 @@ class GithubService(config: GithubConfig) {
             return
         }
 
-        val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS) ?: return
-        val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS) ?: return
+        fun nameToCheck(check: Check) = check.checkRuns.map { it.name to it }.toMap()
+        fun nameToStatus(status: Status) = status.statuses.map { it.context!! to it }.toMap()
+        val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS)?.let { nameToCheck(it) } ?: return
+        val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS)?.let { nameToStatus(it) } ?: return
 
-        val checks = statusCheck.checkRuns.filter { required.contains(it.name) }.map { it.name to checkState(it) }
-        val statuses = status.statuses.filter { required.contains(it.context) }.map { it.context!! to statusState(it) }
-        val knownStatuses = checks.union(statuses).toMap()
-        val unknownStatuses = required.filter { !knownStatuses.keys.contains(it) }.map { it to StatusState.PENDING }
-        val statusMap: Map<String, StatusState> = checks.union(statuses).union(unknownStatuses).toMap()
+        fun nameToStatusState(name: String) = name to when (name) {
+            in statusCheck -> checkState(statusCheck.getValue(name))
+            in status -> statusState(status.getValue(name))
+            else -> StatusState.PENDING
+        }
+
+        val statusMap = required.map { nameToStatusState(it) }.toMap()
 
         if (statusMap.values.all { it == StatusState.SUCCESS }) {
             removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
