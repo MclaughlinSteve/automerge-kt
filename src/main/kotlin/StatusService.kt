@@ -29,18 +29,32 @@ class StatusService(private val config: GithubConfig) {
         val statusCheck = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS) ?: return
         val status = getStatusOrChecks<Status, StatusItem>(pull, SummaryType.STATUS) ?: return
 
-        fun nameToStatusState(name: String) = name to when (name) {
-            in statusCheck -> checkState(statusCheck.getValue(name))
-            in status -> statusState(status.getValue(name))
-            else -> StatusState.PENDING
-        }
-
-        val statusMap = required.map { nameToStatusState(it) }.toMap()
+        val statusMap = required.map { nameToStatusState(it, statusCheck, status) }.toMap()
 
         if (statusMap.values.all { it == StatusState.SUCCESS }) {
             removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
         } else if (statusMap.containsValue(StatusState.FAILURE)) {
             removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
+        }
+    }
+
+    /**
+     * Given a name and a list of checks and statuses, determine the appropriate status state for each name
+     *
+     * @param name the name of the status
+     * @param statusCheck a mapping of names to checks
+     * @param status a mapping of names to statuses
+     * @return a pair containing the given status name and the determined status state for that status name
+     */
+    private fun nameToStatusState(
+        name: String,
+        statusCheck: Map<String, StatusCheck>,
+        status: Map<String, StatusItem>
+    ): Pair<String, StatusState> {
+        return name to when (name) {
+            in statusCheck -> checkState(statusCheck.getValue(name))
+            in status -> statusState(status.getValue(name))
+            else -> StatusState.PENDING
         }
     }
 
