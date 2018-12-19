@@ -60,9 +60,9 @@ data class StatusCheck(
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class StatusItem(
-        val state: String,
-        val description: String?,
-        val context: String
+    val state: String,
+    val description: String?,
+    val context: String
 ) : StatusResponse
 
 /**

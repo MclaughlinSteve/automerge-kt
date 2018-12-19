@@ -1,6 +1,8 @@
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import mu.KotlinLogging
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -11,18 +13,26 @@ private val logger = KotlinLogging.logger {}
  * @param result the failure information from the http request/response
  * @param message the failure message that will be displayed before the error - default: "Something went wrong"
  */
-fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") =
-        logger.error {
-            """
+fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") {
+    logger.error {
+        """
             $message
             |======================
             | Time: ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}
             |
             | Exception:
             | ${result.getException()}
-            |
-            | Stack Trace:
-            | ${result.getException().stackTrace}
             |======================
         """.trimIndent()
-        }
+    }
+    logger.error { "${stackTrace(result.getException())}" }
+}
+
+/**
+ * Convert stack trace to a string
+ */
+private fun stackTrace(exception: Exception): String {
+    val sw = StringWriter()
+    exception.printStackTrace(PrintWriter(sw))
+    return sw.toString()
+}
