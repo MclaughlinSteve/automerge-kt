@@ -12,6 +12,9 @@ const val MERGE = "merge"
 const val COMMITS = "commits"
 const val COMMENTS = "comments"
 
+/**
+ * Enumerations used for bounding types on status checking
+ */
 enum class SummaryType(val route: String) {
     STATUS("status"),
     CHECK_RUNS("check-runs")
