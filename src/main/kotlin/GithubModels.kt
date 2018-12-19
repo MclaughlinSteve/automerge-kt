@@ -33,6 +33,8 @@ enum class LabelRemovalReason {
     OUTSTANDING_REVIEWS
 }
 
+interface StatusResponse
+
 /**
  * Data class used to represent information about github's status checks
  * @property status information about whether a check has completed or not
@@ -44,7 +46,7 @@ data class StatusCheck(
     val status: String,
     val name: String,
     val conclusion: String?
-)
+) : StatusResponse
 
 /**
  * Interface for statuses and check-runs used for better type bounding
@@ -74,7 +76,7 @@ data class StatusItem(
     val state: String,
     val description: String?,
     val context: String?
-)
+) : StatusResponse
 
 /**
  * Data class used to represent information about a github status summary. It has a roll-up of information
