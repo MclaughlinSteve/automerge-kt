@@ -33,35 +33,43 @@ Note: This does not apply for running the job on AWS.
 `gradle run`
 
 ## Running it on AWS Lambda
-- Set your repositories in the `config.yml` file
-- Build a jar `./gradlew shadowJar`
-- Upload the jar in the "Function Code" section on lambda, choose "Java 8" as the runtime, 
-and set the handler to "MainKt::handleLambda"
-- Set your environment variables (Minimum `GITHUB_USER_TOKEN`)
-- Set your memory usage (I'm testing with 256 MB)
+
+-   Set your repositories in the `config.yml` file
+  
+-   Build a jar `./gradlew shadowJar`
+  
+-   Upload the jar in the "Function Code" section on lambda, choose "Java 8" as the runtime, 
+  and set the handler to "MainKt::handleLambda"
+  
+-   Set your environment variables (Minimum `GITHUB_USER_TOKEN`)
+    
+-   Set your memory usage (I'm testing with 256 MB)
 
 Recommended: Set the project to run on a periodic basis
-- Add a "CloudWatch Event trigger"
-- Set the rule type to "schedule expression" and set the expression 
-(e.g. `rate(5, minute)` This runs the function once every five minutes)
+-   Add a "CloudWatch Event trigger"
 
+-   Set the rule type to "schedule expression" and set the expression (e.g. `rate(5, minute)` 
+  This runs the function once every five minutes)
+  
 ## How it works
 
 It runs on an interval against the repositories specified in the config, and for each repository
 it runs the following asynchronously (so that it can run all of the specified repositories in parallel):
-- Finds the oldest PR with the `Automerge` label on it (Or if there is a PR with the `Priority Automerge` label,
+-   Finds the oldest PR with the `Automerge` label on it (Or if there is a PR with the `Priority Automerge` label,
     it will grab the oldest PR with that label instead)
-- If that PR has merge conflicts or a github status has failed (e.g. CI check failure or no approvals), 
+
+-   If that PR has merge conflicts or a github status has failed (e.g. CI check failure or no approvals), 
     the label on that PR is removed, and a comment is left on the PR with a guess about why the label was removed.
-- If that PR still has outstanding github statuses (that is, they are currently still running), 
+
+-   If that PR still has outstanding github statuses (that is, they are currently still running), 
     nothing is done while it waits for the statuses to come back.
-- If that PR has no merge conflicts and all github statuses have passed, 
+
+-   If that PR has no merge conflicts and all github statuses have passed, 
     the PR is squash-merged and the branch is deleted.
 
 Note: It only works on a single PR per repository at a time so that it doesn't blow up your CI pipeline with builds 
 for every labeled pull request (Including this because someone thought that it was calling update branch on every 
 single labeled PR at once rather than dealing with PRs one-by-one from oldest to newest).
-
 
 #### Acknowledgements
 
@@ -69,4 +77,3 @@ I based this on a similar project that a former coworker built using clojure tha
 I wanted to write something in kotlin and wanted to learn something and build out some additional features.
 Thanks to [Adam](https://github.com/AdamReifsneider) for the inspiration. 
 Check out his project [here](https://github.com/AdamReifsneider/pull-automerge).
-
