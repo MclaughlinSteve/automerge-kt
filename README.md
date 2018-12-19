@@ -46,6 +46,7 @@ Note: This does not apply for running the job on AWS.
 -   Set your memory usage (I'm testing with 256 MB)
 
 Recommended: Set the project to run on a periodic basis
+
 -   Add a "CloudWatch Event trigger"
   
 -   Set the rule type to "schedule expression" and set the expression 
