@@ -5,7 +5,6 @@ import com.github.kittinunf.fuel.core.Response
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
-import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -21,7 +20,7 @@ class GithubServiceTest {
             "content-type" to "application/json")
     private val baseUrl = "http://foo.test/bar"
     private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers)
-    private val service = spyk(GithubService(config))
+    private val service = GithubService(config)
     private val client = mockk<Client>()
 
     @Nested
