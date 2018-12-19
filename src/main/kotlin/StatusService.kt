@@ -88,26 +88,22 @@ class StatusService(private val config: GithubConfig) {
             }
             is Result.Success -> {
                 val statusOrCheck = mapper.readValue<StatusOrCheck>(result.get())
-                when (statusOrCheck) {
-                    is Status -> nameToStatus(statusOrCheck)
-                    is Check -> nameToCheck(statusOrCheck)
-                    else -> null
-                }
+                nameToStatusInfo(statusOrCheck)
             }
         }
     }
 
     /**
-     * Get a mapping of check names to the associated status checks
+     * Get a mapping of the status names to the associated status or check
      */
-    private inline fun <reified StatusResponse> nameToCheck(check: Check): Map<String, StatusResponse> =
-            check.checkRuns.map { it.name to it as StatusResponse }.toMap()
-
-    /**
-     * Get a mapping of status names to the associated status items
-     */
-    private inline fun <reified StatusResponse> nameToStatus(status: Status): Map<String, StatusResponse> =
-            status.statuses.map { it.context to it as StatusResponse }.toMap()
+    private inline fun <reified StatusOrCheck, reified StatusResponse> nameToStatusInfo(
+        statusOrCheck: StatusOrCheck
+    ): Map<String, StatusResponse>? =
+        when (statusOrCheck) {
+            is Status -> statusOrCheck.statuses.map { it.context to it as StatusResponse }.toMap()
+            is Check -> statusOrCheck.checkRuns.map { it.name to it as StatusResponse }.toMap()
+            else -> null
+        }
 
     /**
      * Determine the state of the check
