@@ -48,9 +48,9 @@ Note: This does not apply for running the job on AWS.
 Recommended: Set the project to run on a periodic basis
 -   Add a "CloudWatch Event trigger"
 
+-   Set the rule type to "schedule expression" and set the expression (e.g. `rate(5, minute)` 
+  This runs the function once every five minutes)
   
--   Set the rule type to "schedule expression" and set the expression 
-  (e.g. `rate(5, minute)` This runs the function once every five minutes)
   
 ## How it works
 
