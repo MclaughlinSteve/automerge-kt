@@ -42,8 +42,7 @@ Note: This does not apply for running the job on AWS.
   and set the handler to "MainKt::handleLambda"
   
 -   Set your environment variables (Minimum `GITHUB_USER_TOKEN`)
-  
-  
+    
 -   Set your memory usage (I'm testing with 256 MB)
 
 Recommended: Set the project to run on a periodic basis
