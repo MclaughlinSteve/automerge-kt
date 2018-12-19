@@ -46,13 +46,12 @@ Note: This does not apply for running the job on AWS.
 -   Set your memory usage (I'm testing with 256 MB)
 
 Recommended: Set the project to run on a periodic basis
-
 -   Add a "CloudWatch Event trigger"
+
   
 -   Set the rule type to "schedule expression" and set the expression 
   (e.g. `rate(5, minute)` This runs the function once every five minutes)
   
-
 ## How it works
 
 It runs on an interval against the repositories specified in the config, and for each repository
