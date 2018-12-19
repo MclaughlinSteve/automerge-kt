@@ -1,11 +1,9 @@
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
 import mu.KotlinLogging
-import java.time.Instant
-import java.time.format.DateTimeFormatter
 
+const val BRANCHES = "branches"
 const val PULLS = "pulls"
 const val LABELS = "labels"
 const val ISSUES = "issues"
@@ -14,6 +12,9 @@ const val MERGE = "merge"
 const val COMMITS = "commits"
 const val COMMENTS = "comments"
 
+/**
+ * Enumerations used for bounding types on status checking
+ */
 enum class SummaryType(val route: String) {
     STATUS("status"),
     CHECK_RUNS("check-runs")
@@ -29,7 +30,7 @@ fun Any.toJsonString(): String = mapper.writeValueAsString(this)
 /**
  * Service for performing operations related to github
  */
-class GithubService(config: GithubConfig) {
+class GithubService(private val config: GithubConfig) {
     private val logger = KotlinLogging.logger {}
     private val baseUrl = config.baseUrl
     private val headers = config.headers
@@ -190,62 +191,7 @@ class GithubService(config: GithubConfig) {
      *
      * @param pull the pull request for which the statuses are being determined
      */
-    fun assessStatusAndChecks(pull: Pull) {
-        val statusCheck = getStatusOrChecks<Check>(pull, SummaryType.CHECK_RUNS) ?: return
-        val status = getStatusOrChecks<Status>(pull, SummaryType.STATUS) ?: return
-
-        if (statusCheck.checkRuns.any { checkFailure(it.conclusion) }) {
-            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
-        } else if (status.state == "failure" || status.state == "error") {
-            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
-        } else if (checksCompleted(statusCheck) && statusesCompleted(status)) {
-            removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
-        }
-    }
-
-    /**
-     * Get the status summary or "check-runs" summary for a pull request
-     *
-     * @param pull the pull request to get the status or "check-runs" for
-     * @param summaryType the type that we're getting (Status or Check_runs)
-     * @return the status summary or "check-runs" summary for the pull request
-     */
-    private inline fun <reified StatusOrCheck> getStatusOrChecks(pull: Pull, summaryType: SummaryType): StatusOrCheck? {
-        val url = "$baseUrl/$COMMITS/${pull.head.sha}/${summaryType.route}"
-        val (_, _, result) = http.get(url)
-        return when (result) {
-            is Result.Failure -> {
-                logFailure(result)
-                null
-            }
-            is Result.Success -> mapper.readValue<StatusOrCheck>(result.get())
-        }
-    }
-
-    /**
-     * Check if the conclusion for a check-run is a failure of some sort
-     *
-     * @param conclusion the conclusion for the check-run provided by github
-     */
-    private fun checkFailure(conclusion: String?) =
-            listOf("failure", "action_required", "cancelled", "timed_out").contains(conclusion)
-
-    /**
-     * Check if all "check-runs" are completed.
-     *
-     * @param statusCheck the check-runs summary data from github
-     * @return true if there are no check-runs or if all of the check-runs have completed
-     */
-    private fun checksCompleted(statusCheck: Check) =
-            statusCheck.count == 0 || statusCheck.checkRuns.all { it.status == "completed" }
-
-    /**
-     * Check if all statuses are completed
-     *
-     * @param status the status summary data from github
-     * @return true if there are no statuses or if all statuses have completed (a.k.a. are not pending)
-     */
-    private fun statusesCompleted(status: Status) = status.count == 0 || status.state != "pending"
+    fun assessStatusAndChecks(pull: Pull) = StatusService(config).assessStatusAndChecks(pull)
 
     /**
      * Removes the Automerge and Priority labels from a pull request if they exist
@@ -253,96 +199,6 @@ class GithubService(config: GithubConfig) {
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR
      */
-    fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
-        val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS"
-        val (_, _, result) = http.get(url)
-        when (result) {
-            is Result.Failure -> logFailure(result)
-            is Result.Success -> {
-                val labels: List<Label> = mapper.readValue(result.get())
-                val labelsRemoved = listOf(label, priority).map { removeLabelIfExists(labels, pull, it) }
-                if (labelsRemoved.any()) {
-                    handleLabelRemoval(pull, reason)
-                }
-            }
-        }
-    }
-
-    /**
-     * Remove a specified label from a pull request if it exists
-     *
-     * @param labels the list of labels on the pull request
-     * @param pull the pull request to remove any labels from
-     * @param labelName the name of the label to remove if it exists
-     * @return true if the label was successfully removed
-     */
-    private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String) =
-        labels.any { it.name == labelName } && removeLabel(pull, labelName)
-
-    /**
-     * Removes the specified label from a pull request
-     *
-     * @param pull the pull request for which the label will be removed
-     * @param label the label that will be removed
-     * @return true if removing the label was successful, otherwise false
-     */
-    private fun removeLabel(pull: Pull, label: String): Boolean {
-        val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS/$label"
-        val (_, _, result) = http.delete(url)
-        return when (result) {
-            is Result.Failure -> {
-                logFailure(result)
-                false
-            }
-            is Result.Success -> {
-                logger.info { "Successfully removed label $label from PR: ${pull.title}" }
-                true
-            }
-        }
-    }
-
-    /**
-     * Leave a comment on a PR with more information about why a label was removed
-     * @param pull the pull request that the label was removed from
-     * @param reason the reason that the label was removed from the pull request
-     */
-    private fun handleLabelRemoval(pull: Pull, reason: LabelRemovalReason) {
-        when (reason) {
-            LabelRemovalReason.DEFAULT -> postComment(pull, LABEL_REMOVAL_DEFAULT)
-            LabelRemovalReason.STATUS_CHECKS -> postComment(pull, LABEL_REMOVAL_STATUS_CHECKS)
-            LabelRemovalReason.MERGE_CONFLICTS -> postComment(pull, LABEL_REMOVAL_MERGE_CONFLICTS)
-            LabelRemovalReason.OUTSTANDING_REVIEWS -> postComment(pull, LABEL_REMOVAL_OUTSTANDING_REVIEWS)
-        }
-    }
-
-    /**
-     * Post a comment on the specified PR with the given message
-     * @param pull the pull request for which the comment will be made
-     * @param message the message that will be commented
-     */
-    private fun postComment(pull: Pull, message: String) {
-        val url = "$baseUrl/$ISSUES/${pull.number}/$COMMENTS"
-        val commentBody = CommentBody(message)
-        val (_, _, result) = http.post(url, commentBody)
-        when (result) {
-            is Result.Failure -> logFailure(result, "Unable to post comment")
-            is Result.Success -> logger.info { "Successfully commented on PR: ${pull.title} with message $message" }
-        }
-    }
-
-    /**
-     * Print out some formatted information about errors to the console for debugging purposes
-     * @param result the failure information from the http request/response
-     * @param message the failure message that will be displayed before the error - default: "Something went wrong"
-     */
-    private fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Something went wrong!") =
-            logger.error { """
-                $message
-                |======================
-                | Time: ${DateTimeFormatter.ISO_INSTANT.format(Instant.now())}
-                |
-                | Exception:
-                | ${result.getException()}
-                |======================
-            """.trimIndent() }
+    fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) =
+            LabelService(config).removeLabels(pull, reason)
 }

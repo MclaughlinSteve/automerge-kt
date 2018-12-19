@@ -1,11 +1,16 @@
 import com.github.kittinunf.fuel.core.Client
 import com.github.kittinunf.fuel.core.FuelManager
+import com.github.kittinunf.fuel.core.Request
+import com.github.kittinunf.fuel.core.Response
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.HashMap
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GithubServiceTest {
@@ -13,7 +18,8 @@ class GithubServiceTest {
             "authorization" to "Bearer foo",
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
-    private val config = GithubConfig("http://foo.test/bar", "Automerge", "Priority Automerge", "squash", headers)
+    private val baseUrl = "http://foo.test/bar"
+    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers)
     private val service = GithubService(config)
     private val client = mockk<Client>()
 
@@ -120,15 +126,147 @@ class GithubServiceTest {
         }
     }
 
+    @Nested
+    inner class AssessStatusAndChecks {
+        @Test
+        fun `No required statuses removes labels and exits early`() {
+            val pull = generateSamplePull(100)
+            mockkConstructor(LabelService::class)
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
+                    Unit
+            mockRequest(200, "OK", BranchDetails("foo", false, Protection(false, RequiredStatusChecks(emptyList()))))
+
+            service.assessStatusAndChecks(pull)
+            verify(exactly = 1) {
+                anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            }
+        }
+
+        @Test
+        fun `Error getting required statuses exits early`() {
+            val pull = generateSamplePull(101)
+            mockkConstructor(LabelService::class)
+            mockRequest(404, "Not Found")
+            service.assessStatusAndChecks(pull)
+
+            verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
+        }
+
+        @Test
+        fun `PR is blocked and all statuses are successful causes label to be removed`() {
+            val pull = generateSamplePull(102)
+            mockkConstructor(LabelService::class)
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
+                    Unit
+            val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
+            val status = Status("Success", 1, listOf(StatusItem("success", null, "Status - Check")))
+            val statusChecks = listOf("Foo - CI", "Status - Check")
+            val branchDetails = BranchDetails("foo", true, Protection(true, RequiredStatusChecks(statusChecks)))
+            mockRequests(
+                    mapOf(
+                            "$baseUrl/$BRANCHES/${pull.base.ref}" to MockResponse(200, "OK", branchDetails),
+                            "$baseUrl/$COMMITS/${pull.head.sha}/check-runs" to MockResponse(200, "OK", checkRuns),
+                            "$baseUrl/$COMMITS/${pull.head.sha}/status" to MockResponse(200, "OK", status)
+                    )
+            )
+
+            service.assessStatusAndChecks(pull)
+
+            verify(exactly = 1) {
+                anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            }
+        }
+
+        @Test
+        fun `PR is blocked and at least one status is failing causes label to be removed`() {
+            val pull = generateSamplePull(103)
+            mockkConstructor(LabelService::class)
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns Unit
+            val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
+            val status = Status("Success", 1, listOf(StatusItem("failure", null, "Status - Check")))
+            val statusChecks = listOf("Foo - CI", "Status - Check")
+            val branchDetails = BranchDetails("foo", true, Protection(true, RequiredStatusChecks(statusChecks)))
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
+                    mapOf(
+                            "$baseUrl/$BRANCHES/${pull.base.ref}" to MockResponse(200, "OK", branchDetails),
+                            checksUrl to MockResponse(200, "OK", checkRuns),
+                            statusUrl to MockResponse(200, "OK", status)
+                    )
+            )
+
+            service.assessStatusAndChecks(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
+
+            verify(exactly = 1) { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) }
+        }
+
+        @Test
+        fun `PR is blocked and at least one status is pending does not cause label to be removed`() {
+            val pull = generateSamplePull(104)
+            mockkConstructor(LabelService::class)
+            val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
+            val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
+            val statusChecks = listOf("Foo - CI", "Status - Check")
+            val branchDetails = BranchDetails("foo", true, Protection(true, RequiredStatusChecks(statusChecks)))
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
+                    mapOf(
+                            "$baseUrl/$BRANCHES/${pull.base.ref}" to MockResponse(200, "OK", branchDetails),
+                            checksUrl to MockResponse(200, "OK", checkRuns),
+                            statusUrl to MockResponse(200, "OK", status)
+                    )
+            )
+
+            service.assessStatusAndChecks(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
+
+            verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
+        }
+    }
+
     private fun generateSamplePull(id: Long) =
             Pull(id, id, "Test PR", "", listOf(Label("Automerge")), Branch("", ""), Branch("", ""))
 
     private fun mockRequest(statusCode: Int, responseMessage: String, data: Any? = null) {
         every { client.executeRequest(any()).httpStatusCode } returns statusCode
         every { client.executeRequest(any()).httpResponseMessage } returns responseMessage
-        data?.let {
-            every { client.executeRequest(any()).data } returns data.toJsonString().toByteArray()
-        }
+        every { client.executeRequest(any()).data } returns (data ?: "{}").toJsonString().toByteArray()
         FuelManager.instance.client = client
+    }
+
+    private fun mockRequests(mockRequests: Map<String, MockResponse>): MockClient {
+        val mockClient = MockClient(mockRequests)
+        FuelManager.instance.client = mockClient
+        return mockClient
+    }
+
+    data class MockResponse(val statusCode: Int, val responseMessage: String, val data: Any? = null)
+
+    class MockClient : Client {
+        private val mockRequests: Map<String, MockResponse>
+        private val urlToCalls: MutableMap<String, Int> = HashMap()
+
+        constructor(mockRequests: Map<String, MockResponse>) {
+            this.mockRequests = mockRequests
+        }
+
+        override fun executeRequest(request: Request): Response {
+            val response = Response()
+            val fullUrl = request.url.toString()
+            val (statusCode, responseMessage, data) = mockRequests[fullUrl]!!
+            urlToCalls.merge(fullUrl, 1, Int::plus)
+
+            response.httpStatusCode = statusCode
+            response.httpResponseMessage = responseMessage
+            response.data = (data ?: "{}").toJsonString().toByteArray()
+            return response
+        }
+
+        fun getNumberOfCalls(url: String): Int = urlToCalls[url] ?: 0
     }
 }

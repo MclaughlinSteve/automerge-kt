@@ -14,6 +14,15 @@ enum class MergeState {
 }
 
 /**
+ * Enumerations used to represent the state that a check or status will be in
+ */
+enum class StatusState {
+    SUCCESS,
+    FAILURE,
+    PENDING
+}
+
+/**
  * Enumerations used to provide more information about why a pull request was unable to be merged
  *
  */
@@ -25,15 +34,36 @@ enum class LabelRemovalReason {
 }
 
 /**
+ * Interface for status responses used for better type bounding
+ */
+interface StatusResponse
+
+/**
  * Data class used to represent information about github's status checks
  * @property status information about whether a check has completed or not
+ * @property name the name of the status check
  * @property conclusion information about whether a completed check was successful or not
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class StatusCheck(
     val status: String,
+    val name: String,
     val conclusion: String?
-)
+) : StatusResponse
+
+/**
+ * Data class used to represent information about a github status
+ * (Note: description and context may not need to be nullable)
+ * @property state the state of the status ("success", "pending", "failure", or "error"
+ * @property description A short description of the status
+ * @property context A string label to differentiate this status from the status of other systems
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class StatusItem(
+    val state: String,
+    val description: String?,
+    val context: String
+) : StatusResponse
 
 /**
  * Interface for statuses and check-runs used for better type bounding
@@ -50,20 +80,6 @@ data class Check(
     @JsonProperty("total_count") val count: Int,
     @JsonProperty("check_runs") val checkRuns: List<StatusCheck>
 ) : StatusOrCheck
-
-/**
- * Data class used to represent information about a github status
- * (Note: description and context may not need to be nullable)
- * @property state the state of the status ("success", "pending", "failure", or "error"
- * @property description A short description of the status
- * @property context A string label to differentiate this status from the status of other systems
- */
-@JsonIgnoreProperties(ignoreUnknown = true)
-data class StatusItem(
-    val state: String,
-    val description: String?,
-    val context: String?
-)
 
 /**
  * Data class used to represent information about a github status summary. It has a roll-up of information
@@ -101,6 +117,39 @@ data class MergeStatus(
 data class Branch(
     val ref: String,
     val sha: String
+)
+
+/**
+ * Data class used to represent relevant information about github's branch details
+ * @property name the name of the branch
+ * @property protected a flag describing if a branch is protected or not
+ * @property protection the protection object describing what type of protections exist on the branch if any
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class BranchDetails(
+    val name: String,
+    val protected: Boolean,
+    val protection: Protection
+)
+
+/**
+ * Data class used to represent relevant information about a branch's protection rules
+ * @property enabled a flag describing if protections are enabled
+ * @property requiredStatusChecks the object with more detail about what checks are required by the protection rules
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class Protection(
+    val enabled: Boolean,
+    @JsonProperty("required_status_checks") val requiredStatusChecks: RequiredStatusChecks
+)
+
+/**
+ * Data class used to represent information about a branch's required status checks
+ * @property contexts a list of checks that are required
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class RequiredStatusChecks(
+    val contexts: List<String>
 )
 
 /**
