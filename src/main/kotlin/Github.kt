@@ -188,10 +188,7 @@ class GithubService(private val config: GithubConfig) {
      *
      * @param pull the pull request for which the statuses are being determined
      */
-    fun assessStatusAndChecks(pull: Pull) {
-        val statusCommand = StatusCommand(config, pull)
-        statusCommand.execute()
-    }
+    fun assessStatusAndChecks(pull: Pull) = StatusService(config).assessStatusAndChecks(pull)
 
     /**
      * Removes the Automerge and Priority labels from a pull request if they exist
@@ -200,5 +197,5 @@ class GithubService(private val config: GithubConfig) {
      * @param reason some information about why the label is removed which will be commented on the PR
      */
     fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) =
-            LabelCommand(config, pull, reason).execute()
+            LabelService(config).removeLabels(pull, reason)
 }

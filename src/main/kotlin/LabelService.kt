@@ -2,11 +2,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kittinunf.result.Result
 import mu.KotlinLogging
 
-class LabelCommand(
-    config: GithubConfig,
-    private val pull: Pull,
-    private val reason: LabelRemovalReason = LabelRemovalReason.DEFAULT
-) {
+/**
+ * Service for performing actions related to github statuses
+ */
+class LabelService(config: GithubConfig) {
     private val logger = KotlinLogging.logger {}
     private val baseUrl = config.baseUrl
     private val headers = config.headers
@@ -14,17 +13,13 @@ class LabelCommand(
     private val priority = config.priority
     private val http = Http(headers)
 
-    fun execute() {
-        removeLabels(pull, reason)
-    }
-
     /**
      * Removes the Automerge and Priority labels from a pull request if they exist
      *
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR
      */
-    private fun removeLabels(pull: Pull, reason: LabelRemovalReason) {
+    fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
         val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS"
         val (_, _, result) = http.get(url)
         when (result) {

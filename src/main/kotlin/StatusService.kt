@@ -1,12 +1,24 @@
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kittinunf.result.Result
 
-class StatusCommand(private val config: GithubConfig, private val pull: Pull) {
+/**
+ * Service for performing actions related to github statuses
+ */
+class StatusService(private val config: GithubConfig) {
     private val baseUrl = config.baseUrl
     private val headers = config.headers
     private val http = Http(headers)
 
-    fun execute() {
+    /**
+     * Checks to see whether there are any outstanding status requests (things like travis builds for example)
+     *
+     * If the merge status is "BLOCKED" and there are no outstanding status checks, something else is causing
+     * the branch to be unable to be merged (Either merge conflicts, or requested changes) and the label will
+     * be removed
+     *
+     * @param pull the pull request for which the statuses are being determined
+     */
+    fun assessStatusAndChecks(pull: Pull) {
         val required = getRequiredStatusAndChecks(pull) ?: return
 
         if (required.isEmpty()) {
@@ -61,7 +73,7 @@ class StatusCommand(private val config: GithubConfig, private val pull: Pull) {
      *
      * @param pull the pull request to get the status or "check-runs" for
      * @param summaryType the type that we're getting (Status or Check_runs)
-     * @return the status summary or "check-runs" summary for the pull request
+     * @return a mapping of status names to the associated status or check_run
      */
     private inline fun <reified StatusOrCheck, reified StatusResponse> getStatusOrChecks(
         pull: Pull,
@@ -85,11 +97,17 @@ class StatusCommand(private val config: GithubConfig, private val pull: Pull) {
         }
     }
 
+    /**
+     * Get a mapping of check names to the associated status checks
+     */
     private inline fun <reified StatusResponse> nameToCheck(check: Check): Map<String, StatusResponse> =
             check.checkRuns.map { it.name to it as StatusResponse }.toMap()
 
+    /**
+     * Get a mapping of status names to the associated status items
+     */
     private inline fun <reified StatusResponse> nameToStatus(status: Status): Map<String, StatusResponse> =
-            status.statuses.map { it.context!! to it as StatusResponse }.toMap()
+            status.statuses.map { it.context to it as StatusResponse }.toMap()
 
     /**
      * Determine the state of the check
@@ -127,5 +145,5 @@ class StatusCommand(private val config: GithubConfig, private val pull: Pull) {
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR
      */
-    private fun removeLabels(pull: Pull, reason: LabelRemovalReason) = LabelCommand(config, pull, reason).execute()
+    private fun removeLabels(pull: Pull, reason: LabelRemovalReason) = LabelService(config).removeLabels(pull, reason)
 }
