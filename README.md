@@ -1,3 +1,4 @@
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d9b1f9bb472f467c827ee38ec8ff019d)](https://app.codacy.com/app/MclaughlinSteve/automerge-kt?utm_source=github.com&utm_medium=referral&utm_content=MclaughlinSteve/automerge-kt&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.com/MclaughlinSteve/automerge-kt.svg?branch=master)](https://travis-ci.com/MclaughlinSteve/automerge-kt)
 [![Maintainability](https://api.codeclimate.com/v1/badges/5ec4d88711d37510eb50/maintainability)](https://codeclimate.com/github/MclaughlinSteve/automerge-kt/maintainability)
 [![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
