@@ -59,20 +59,8 @@ class GithubService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Determine if a given pull request has the specified priority label.
-     *
-     * @param pull the pull request to check
-     * @return true if the pull request has the specified priority label
-     */
     private fun priorityRequest(pull: Pull) = pull.labels.any { it.name == priority }
 
-    /**
-     * Determine if a given pull request has the specified automerge label.
-     *
-     * @param pull the pull request to check
-     * @return true if the pull request has the specified automerge label
-     */
     private fun labeledRequest(pull: Pull) = pull.labels.any { it.name == label }
 
     /**
