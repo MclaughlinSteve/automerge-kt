@@ -92,31 +92,25 @@ class GithubService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Determine the merge state for a pull request given its merge status object
-     *
-     * The status from this function is used to determine whether the function should merge,
-     *  update the branch, remove the label and try a different branch, or wait for another update.
-     *
-     * @param mergeStatus the merge_status object sent from github
-     * @return the merge status of the pull request
-     */
     private fun determineMergeState(mergeStatus: MergeStatus): MergeState {
         logger.info { "The mergeable state before producing status is: ${mergeStatus.mergeableState}" }
         return when (mergeStatus.mergeable) {
             null -> MergeState.WAITING
             false -> MergeState.UNMERGEABLE
-            else -> when (mergeStatus.mergeableState) {
-                "behind" -> MergeState.BEHIND
-                "clean" -> MergeState.CLEAN
-                "blocked" -> MergeState.BLOCKED
-                "has_hooks" -> MergeState.WAITING
-                "unstable" -> MergeState.WAITING
-                "unknown" -> MergeState.WAITING
-                else -> MergeState.BAD
-            }
+            else -> interpretMergeableState(mergeStatus)
         }
     }
+
+    private fun interpretMergeableState(mergeStatus: MergeStatus): MergeState =
+        when (mergeStatus.mergeableState) {
+            "behind" -> MergeState.BEHIND
+            "clean" -> MergeState.CLEAN
+            "blocked" -> MergeState.BLOCKED
+            "has_hooks" -> MergeState.WAITING
+            "unstable" -> MergeState.WAITING
+            "unknown" -> MergeState.WAITING
+            else -> MergeState.BAD
+        }
 
     /**
      * Merge the specified pull request and delete the branch. If there is a problem merging,
@@ -145,13 +139,6 @@ class GithubService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Deletes the branch for a specified pull request. Used after the pull request has been merged
-     *
-     * This function is essentially just hitting the "Delete branch" button on github
-     *
-     * @param pull the pull request for the branch to be deleted
-     */
     private fun deleteBranch(pull: Pull) {
         val url = "$baseUrl/git/refs/heads/${pull.head.ref}"
         val (_, _, result) = http.delete(url)
