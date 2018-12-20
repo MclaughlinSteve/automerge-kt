@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter
 private val logger = KotlinLogging.logger {}
 
 /**
- * Print out some formatted information about errors to the console for debugging purposes
+ * Print out some formatted information about errors to the console for debugging purposes.
  *
  * @param result the failure information from the http request/response
  * @param message the failure message that will be displayed before the error - default: "Something went wrong"

@@ -10,7 +10,7 @@ class StatusService(private val config: GithubConfig) {
     private val http = Http(headers)
 
     /**
-     * Checks to see whether there are any outstanding status requests (things like travis builds for example)
+     * Checks to see whether there are any outstanding status requests (things like travis builds for example).
      *
      * If the merge status is "BLOCKED" and there are no outstanding status checks, something else is causing
      * the branch to be unable to be merged (Either merge conflicts, or requested changes) and the label will
@@ -50,14 +50,6 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Given a name and a list of checks and statuses, determine the appropriate status state for each name
-     *
-     * @param name the name of the status
-     * @param statusCheck a mapping of names to checks
-     * @param status a mapping of names to statuses
-     * @return a pair containing the given status name and the determined status state for that status name
-     */
     private fun nameToStatusState(
         name: String,
         statusCheck: Map<String, StatusCheck>,
@@ -70,11 +62,6 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Gets a list of the required status and checks for the branch being merged into
-     *
-     * @param pull the pull request being evaluated. It will contain the branch being merged into
-     */
     private fun getRequiredStatusAndChecks(pull: Pull): List<String>? {
         val url = "$baseUrl/$BRANCHES/${pull.base.ref}"
         val (_, _, result) = http.get(url)
@@ -94,13 +81,6 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Get the status summary or "check-runs" summary for a pull request
-     *
-     * @param pull the pull request to get the status or "check-runs" for
-     * @param summaryType the type that we're getting (Status or Check_runs)
-     * @return a mapping of status names to the associated status or check_run
-     */
     private inline fun <reified StatusOrCheck, reified StatusResponse> getStatusOrChecks(
         pull: Pull,
         summaryType: SummaryType
@@ -119,12 +99,6 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Get a mapping of the status names to the associated status or check
-     *
-     * @param statusOrCheck the status or check from github to map to status names
-     * @return a mapping of status names to the related status data
-     */
     private inline fun <reified StatusOrCheck, reified StatusResponse> nameToStatusInfo(
         statusOrCheck: StatusOrCheck
     ): Map<String, StatusResponse>? =
@@ -134,12 +108,6 @@ class StatusService(private val config: GithubConfig) {
             else -> null
         }
 
-    /**
-     * Determine the state of the check
-     *
-     * @param item the check-run provided by github
-     * @return the state of the check
-     */
     private fun checkState(item: StatusCheck): StatusState {
         val failureStates = listOf("failure", "action_required", "cancelled", "timed_out")
         return when {
@@ -149,12 +117,6 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Determine the state of the status
-     *
-     * @param item the status provided by github
-     * @return the state of the status
-     */
     private fun statusState(item: StatusItem): StatusState {
         return when (item.state) {
             "failure" -> StatusState.FAILURE
@@ -164,11 +126,5 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
-    /**
-     * Removes the Automerge and Priority labels from a pull request if they exist
-     *
-     * @param pull the pull request for which the label will be removed
-     * @param reason some information about why the label is removed which will be commented on the PR
-     */
     private fun removeLabels(pull: Pull, reason: LabelRemovalReason) = LabelService(config).removeLabels(pull, reason)
 }
