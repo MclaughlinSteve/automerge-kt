@@ -40,7 +40,8 @@ class GithubService(private val config: GithubConfig) {
     private val http = Http(headers)
 
     /**
-     * Return the oldest pull request with the specified automerge label
+     * Return the oldest pull request with the specified automerge label.
+     *
      * @return the oldest labeled pull request or null if there are no labeled pull requests
      */
     fun getOldestLabeledRequest(): Pull? {
@@ -59,21 +60,24 @@ class GithubService(private val config: GithubConfig) {
     }
 
     /**
-     * Determine if a given pull request has the specified priority label
+     * Determine if a given pull request has the specified priority label.
+     *
      * @param pull the pull request to check
      * @return true if the pull request has the specified priority label
      */
     private fun priorityRequest(pull: Pull) = pull.labels.any { it.name == priority }
 
     /**
-     * Determine if a given pull request has the specified automerge label
+     * Determine if a given pull request has the specified automerge label.
+     *
      * @param pull the pull request to check
      * @return true if the pull request has the specified automerge label
      */
     private fun labeledRequest(pull: Pull) = pull.labels.any { it.name == label }
 
     /**
-     * Get the current status of a particular pull request
+     * Get the current status of a particular pull request.
+     *
      * @param pull the pull request for which you are getting the status
      * @return the merge status of the pull request
      */
@@ -115,7 +119,7 @@ class GithubService(private val config: GithubConfig) {
     /**
      * Merge the specified pull request and delete the branch. If there is a problem merging,
      * the label will be removed from that pull request so the program can attempt to merge another
-     * branch that has no issues
+     * branch that has no issues.
      *
      * This function is essentially just hitting the "Merge" button on github
      * and then deleting the branch afterward
@@ -149,7 +153,7 @@ class GithubService(private val config: GithubConfig) {
     }
 
     /**
-     * Update a branch with changes from the base branch
+     * Update a branch with changes from the base branch.
      *
      * This is essentially hitting the "update branch" button on the github ui
      *
@@ -166,7 +170,7 @@ class GithubService(private val config: GithubConfig) {
     }
 
     /**
-     * Checks to see whether there are any outstanding status requests (things like travis builds for example)
+     * Checks to see whether there are any outstanding status requests (things like travis builds for example).
      *
      * If the merge status is "BLOCKED" and there are no outstanding status checks, something else is causing
      * the branch to be unable to be merged (Either merge conflicts, or requested changes) and the label will
@@ -177,7 +181,7 @@ class GithubService(private val config: GithubConfig) {
     fun assessStatusAndChecks(pull: Pull) = StatusService(config).assessStatusAndChecks(pull)
 
     /**
-     * Removes the Automerge and Priority labels from a pull request if they exist
+     * Removes the Automerge and Priority labels from a pull request if they exist.
      *
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR

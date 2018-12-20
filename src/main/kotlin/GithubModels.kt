@@ -38,7 +38,7 @@ enum class LabelRemovalReason {
 interface StatusResponse
 
 /**
- * Data class used to represent information about github's status checks
+ * Data class used to represent information about github's status checks.
  *
  * @property status information about whether a check has completed or not
  * @property name the name of the status check
@@ -53,7 +53,7 @@ data class StatusCheck(
 
 /**
  * Data class used to represent information about a github status
- * (Note: description and context may not need to be nullable)
+ * (Note: description and context may not need to be nullable).
  *
  * @property state the state of the status ("success", "pending", "failure", or "error"
  * @property description A short description of the status
@@ -72,7 +72,7 @@ data class StatusItem(
 interface StatusOrCheck
 
 /**
- * Data class used to represent information about github's checks (e.g. travis status checks)
+ * Data class used to represent information about github's checks (e.g. travis status checks).
  *
  * @property count the number of checks for a given pull request
  * @property checkRuns a list of status checks that have or are being run
@@ -85,7 +85,7 @@ data class Check(
 
 /**
  * Data class used to represent information about a github status summary. It has a roll-up of information
- * about all of the statuses for a particular pull request
+ * about all of the statuses for a particular pull request.
  *
  * @property state the state of the statuses
  * @property count the number of statuses for a given pull request
@@ -99,7 +99,7 @@ data class Status(
 ) : StatusOrCheck
 
 /**
- * Data class used to represent relevant information about a pull request's merge status
+ * Data class used to represent relevant information about a pull request's merge status.
  *
  * @property number the pull request number
  * @property mergeable a field that gives some information about whether a PR is or is not mergeable
@@ -113,7 +113,7 @@ data class MergeStatus(
 )
 
 /**
- * Data class used to represent relevant information about github's branches
+ * Data class used to represent relevant information about github's branches.
  *
  * @property ref a name reference for the branch (e.g. 'master')
  * @property sha the commit sha for the specified branch
@@ -125,7 +125,7 @@ data class Branch(
 )
 
 /**
- * Data class used to represent relevant information about github's branch details
+ * Data class used to represent relevant information about github's branch details.
  *
  * @property name the name of the branch
  * @property protected a flag describing if a branch is protected or not
@@ -139,7 +139,7 @@ data class BranchDetails(
 )
 
 /**
- * Data class used to represent relevant information about a branch's protection rules
+ * Data class used to represent relevant information about a branch's protection rules.
  *
  * @property enabled a flag describing if protections are enabled
  * @property requiredStatusChecks the object with more detail about what checks are required by the protection rules
@@ -151,7 +151,7 @@ data class Protection(
 )
 
 /**
- * Data class used to represent information about a branch's required status checks
+ * Data class used to represent information about a branch's required status checks.
  *
  * @property contexts a list of checks that are required
  */
@@ -161,7 +161,7 @@ data class RequiredStatusChecks(
 )
 
 /**
- * Data class used to represent relevant information about github's pull request
+ * Data class used to represent relevant information about github's pull request.
  *
  * @property id the id of the pull request
  * @property number the pull request number
@@ -183,7 +183,7 @@ data class Pull(
 )
 
 /**
- * Data class used to represent github's Label
+ * Data class used to represent github's Label.
  *
  * @property name the name of the label
  */
@@ -191,7 +191,7 @@ data class Pull(
 data class Label(val name: String)
 
 /**
- * The body of the request used to perform a merge into the base branch
+ * The body of the request used to perform a merge into the base branch.
  *
  * @property commitTitle the title of the commit that will be merged
  * @property mergeMethod the method of merging to be used
@@ -202,7 +202,7 @@ data class CommitBody(
 )
 
 /**
- * The body of the request used to update a branch with changes from the base branch
+ * The body of the request used to update a branch with changes from the base branch.
  *
  * @property head the branch with the changes
  * @property base the branch you are merging the changes into
@@ -215,7 +215,7 @@ data class UpdateBody(
 )
 
 /**
- * The body of the request used to make a comment on a PR
+ * The body of the request used to make a comment on a PR.
  *
  * @property body the content of the comment message
  */
