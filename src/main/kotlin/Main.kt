@@ -29,7 +29,6 @@ fun handleLambda(input: InputStream) {
     launchAutomerger(services)
 }
 
-
 private fun launchAutomerger(services: List<GithubService>) {
     runBlocking {
         services.forEach {

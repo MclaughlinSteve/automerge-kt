@@ -11,8 +11,8 @@ fun loadGithubConfig(): List<GithubConfig> {
     val mapper = ObjectMapper(YAMLFactory())
     mapper.registerModule(KotlinModule())
 
-    val basic = System.getenv("GITHUB_USER_TOKEN") ?:
-        throw IllegalArgumentException("Missing GITHUB_USER_TOKEN env variable")
+    val basic = System.getenv("GITHUB_USER_TOKEN")
+        ?: throw IllegalArgumentException("Missing GITHUB_USER_TOKEN env variable")
     val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
     val priority = System.getenv("PRIORITY_LABEL") ?: "Priority Automerge"
     val mergeType = System.getenv("MERGE_TYPE") ?: "squash"
