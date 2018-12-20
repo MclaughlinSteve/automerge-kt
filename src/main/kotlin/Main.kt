@@ -20,7 +20,7 @@ fun main() {
 }
 
 /**
- * Used to run this application on AWS Lambda
+ * Used to run this application on AWS Lambda.
  *
  * @param input the input stream sent by aws
  */
