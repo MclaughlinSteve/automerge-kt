@@ -14,7 +14,7 @@ class LabelService(config: GithubConfig) {
     private val http = Http(headers)
 
     /**
-     * Removes the Automerge and Priority labels from a pull request if they exist
+     * Removes the Automerge and Priority labels from a pull request if they exist.
      *
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR
@@ -34,24 +34,9 @@ class LabelService(config: GithubConfig) {
         }
     }
 
-    /**
-     * Remove a specified label from a pull request if it exists
-     *
-     * @param labels the list of labels on the pull request
-     * @param pull the pull request to remove any labels from
-     * @param labelName the name of the label to remove if it exists
-     * @return true if the label was successfully removed
-     */
     private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String) =
             labels.any { it.name == labelName } && removeLabel(pull, labelName)
 
-    /**
-     * Removes the specified label from a pull request
-     *
-     * @param pull the pull request for which the label will be removed
-     * @param label the label that will be removed
-     * @return true if removing the label was successful, otherwise false
-     */
     private fun removeLabel(pull: Pull, label: String): Boolean {
         val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS/$label"
         val (_, _, result) = http.delete(url)
@@ -67,12 +52,6 @@ class LabelService(config: GithubConfig) {
         }
     }
 
-    /**
-     * Leave a comment on a PR with more information about why a label was removed
-     *
-     * @param pull the pull request that the label was removed from
-     * @param reason the reason that the label was removed from the pull request
-     */
     private fun handleLabelRemoval(pull: Pull, reason: LabelRemovalReason) {
         when (reason) {
             LabelRemovalReason.DEFAULT -> postComment(pull, LABEL_REMOVAL_DEFAULT)
@@ -82,12 +61,6 @@ class LabelService(config: GithubConfig) {
         }
     }
 
-    /**
-     * Post a comment on the specified PR with the given message
-     *
-     * @param pull the pull request for which the comment will be made
-     * @param message the message that will be commented
-     */
     private fun postComment(pull: Pull, message: String) {
         val url = "$baseUrl/$ISSUES/${pull.number}/$COMMENTS"
         val commentBody = CommentBody(message)

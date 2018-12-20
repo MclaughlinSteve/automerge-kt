@@ -157,9 +157,7 @@ class GithubService(private val config: GithubConfig) {
         val (_, _, result) = http.delete(url)
         when (result) {
             is Result.Failure -> logFailure(result)
-            is Result.Success -> {
-                logger.info { "Successfully deleted ${pull.head.ref}" }
-            }
+            is Result.Success -> logger.info { "Successfully deleted ${pull.head.ref}" }
         }
     }
 

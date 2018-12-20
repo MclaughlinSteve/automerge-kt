@@ -10,7 +10,7 @@ import com.github.kittinunf.fuel.httpPut
 class Http(private val headers: Map<String, String>) {
 
     /**
-     * Helper function for making http GET requests
+     * Helper function for making http GET requests.
      *
      * @param url the url to make the request on
      * @return Triple<Request, Response, Result<String, FuelError>>
@@ -18,7 +18,7 @@ class Http(private val headers: Map<String, String>) {
     fun get(url: String) = request(url.httpGet())
 
     /**
-     * Helper function for making http DELETE requests
+     * Helper function for making http DELETE requests.
      *
      * @param url the url to make the request on
      * @return Triple<Request, Response, Result<String, FuelError>>
@@ -26,7 +26,7 @@ class Http(private val headers: Map<String, String>) {
     fun delete(url: String) = request(url.httpDelete())
 
     /**
-     * Helper function for making http PUT requests
+     * Helper function for making http PUT requests.
      *
      * @param url the url to make the request on
      * @param body the body of the request
@@ -35,7 +35,7 @@ class Http(private val headers: Map<String, String>) {
     fun put(url: String, body: Any) = requestWithBody(url.httpPut(), body)
 
     /**
-     * Helper function for making http POST requests
+     * Helper function for making http POST requests.
      *
      * @param url the url to make the request on
      * @param body the body of the request
@@ -43,19 +43,8 @@ class Http(private val headers: Map<String, String>) {
      */
     fun post(url: String, body: Any) = requestWithBody(url.httpPost(), body)
 
-    /**
-     * Common behavior for requests without a body
-     *
-     * @param request the request to make
-     */
     private fun request(request: Request) = request.header(headers).responseString()
 
-    /**
-     * Common behavior for requests with a body
-     *
-     * @param request the request to make
-     * @param body the body of the request
-     */
     private fun requestWithBody(request: Request, body: Any) =
             request.body(body.toJsonString()).header(headers).responseString()
 }

@@ -29,11 +29,6 @@ fun handleLambda(input: InputStream) {
     launchAutomerger(services)
 }
 
-/**
- * Run the automerge logic for each repository in parallel using coroutines
- *
- * @param services the service instances for each repository
- */
 private fun launchAutomerger(services: List<GithubService>) {
     runBlocking {
         services.forEach {
@@ -44,16 +39,6 @@ private fun launchAutomerger(services: List<GithubService>) {
     }
 }
 
-/**
- * Perform the automerge processing for the given service. Each service is specific to a github repository.
- * Multiple repositories can be run in parallel if they are specified in the config file.
- * This includes getting the oldest pull request with the label, determining whether it can be merged,
- * if it hasn't passed all required checks, if it has merge conflicts, if it has requested changes blocking it
- * from merging, if it needs to be updated, or if it's just waiting on status checks. Depending on the status,
- * it will perform the appropriate behavior.
- *
- * @param service the service configured for a specific repository
- */
 private fun executeAutomerge(service: GithubService) {
     val pull = service.getOldestLabeledRequest()
     val reviewStatus: MergeState? = pull?.let { service.getReviewStatus(pull) }
