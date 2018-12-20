@@ -10,6 +10,7 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Print out some formatted information about errors to the console for debugging purposes
+ *
  * @param result the failure information from the http request/response
  * @param message the failure message that will be displayed before the error - default: "Something went wrong"
  */
@@ -25,13 +26,10 @@ fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Som
             |======================
         """.trimIndent()
     }
-    logger.error { "${stackTrace(result.getException())}" }
+    logger.error { "${getStringifiedStackTrace(result.getException())}" }
 }
 
-/**
- * Convert stack trace to a string
- */
-private fun stackTrace(exception: Exception): String {
+private fun getStringifiedStackTrace(exception: Exception): String {
     val sw = StringWriter()
     exception.printStackTrace(PrintWriter(sw))
     return sw.toString()

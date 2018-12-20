@@ -9,7 +9,7 @@ const val INTERVAL: Long = 60_000
 private val logger = KotlinLogging.logger {}
 
 /**
- * Main function used for running the application locally
+ * Main function used for running the application locally.
  */
 fun main() {
     val services = githubConfig.map { GithubService(it) }
@@ -21,6 +21,8 @@ fun main() {
 
 /**
  * Used to run this application on AWS Lambda
+ *
+ * @param input the input stream sent by aws
  */
 fun handleLambda(input: InputStream) {
     val services = githubConfig.map { GithubService(it) }
@@ -29,6 +31,7 @@ fun handleLambda(input: InputStream) {
 
 /**
  * Run the automerge logic for each repository in parallel using coroutines
+ *
  * @param services the service instances for each repository
  */
 private fun launchAutomerger(services: List<GithubService>) {

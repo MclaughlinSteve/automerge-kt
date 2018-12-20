@@ -3,7 +3,7 @@ import com.github.kittinunf.result.Result
 import mu.KotlinLogging
 
 /**
- * Service for performing actions related to github statuses
+ * Service for performing actions related to github statuses.
  */
 class LabelService(config: GithubConfig) {
     private val logger = KotlinLogging.logger {}
@@ -69,6 +69,7 @@ class LabelService(config: GithubConfig) {
 
     /**
      * Leave a comment on a PR with more information about why a label was removed
+     *
      * @param pull the pull request that the label was removed from
      * @param reason the reason that the label was removed from the pull request
      */
@@ -83,6 +84,7 @@ class LabelService(config: GithubConfig) {
 
     /**
      * Post a comment on the specified PR with the given message
+     *
      * @param pull the pull request for which the comment will be made
      * @param message the message that will be commented
      */

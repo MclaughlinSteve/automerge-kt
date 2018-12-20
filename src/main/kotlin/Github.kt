@@ -13,7 +13,7 @@ const val COMMITS = "commits"
 const val COMMENTS = "comments"
 
 /**
- * Enumerations used for bounding types on status checking
+ * Enumerations used for bounding types on status checking.
  */
 enum class SummaryType(val route: String) {
     STATUS("status"),
@@ -23,12 +23,12 @@ enum class SummaryType(val route: String) {
 val mapper = jacksonObjectMapper()
 
 /**
- * Extension function to turn any object into a json string
+ * Extension function to turn any object into a json string.
  */
 fun Any.toJsonString(): String = mapper.writeValueAsString(this)
 
 /**
- * Service for performing operations related to github
+ * Service for performing operations related to github.
  */
 class GithubService(private val config: GithubConfig) {
     private val logger = KotlinLogging.logger {}
@@ -102,19 +102,19 @@ class GithubService(private val config: GithubConfig) {
      * @return the merge status of the pull request
      */
     private fun determineMergeState(mergeStatus: MergeStatus): MergeState {
-        when (mergeStatus.mergeable) {
-            null -> return MergeState.WAITING
-            false -> return MergeState.UNMERGEABLE
-        }
         logger.info { "The mergeable state before producing status is: ${mergeStatus.mergeableState}" }
-        return when (mergeStatus.mergeableState) {
-            "behind" -> MergeState.BEHIND
-            "clean" -> MergeState.CLEAN
-            "blocked" -> MergeState.BLOCKED
-            "has_hooks" -> MergeState.WAITING
-            "unstable" -> MergeState.WAITING
-            "unknown" -> MergeState.WAITING
-            else -> MergeState.BAD
+        return when (mergeStatus.mergeable) {
+            null -> MergeState.WAITING
+            false -> MergeState.UNMERGEABLE
+            else -> when (mergeStatus.mergeableState) {
+                "behind" -> MergeState.BEHIND
+                "clean" -> MergeState.CLEAN
+                "blocked" -> MergeState.BLOCKED
+                "has_hooks" -> MergeState.WAITING
+                "unstable" -> MergeState.WAITING
+                "unknown" -> MergeState.WAITING
+                else -> MergeState.BAD
+            }
         }
     }
 
@@ -176,9 +176,7 @@ class GithubService(private val config: GithubConfig) {
         val (_, _, result) = http.post(url, body)
         when (result) {
             is Result.Failure -> logFailure(result)
-            is Result.Success -> {
-                logger.info { "Successfully updating branch for PR: ${pull.title}" }
-            }
+            is Result.Success -> logger.info { "Successfully updating branch for PR: ${pull.title}" }
         }
     }
 

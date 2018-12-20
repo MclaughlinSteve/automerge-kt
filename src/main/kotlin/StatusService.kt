@@ -2,7 +2,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kittinunf.result.Result
 
 /**
- * Service for performing actions related to github statuses
+ * Service for performing actions related to github statuses.
  */
 class StatusService(private val config: GithubConfig) {
     private val baseUrl = config.baseUrl
@@ -19,22 +19,34 @@ class StatusService(private val config: GithubConfig) {
      * @param pull the pull request for which the statuses are being determined
      */
     fun assessStatusAndChecks(pull: Pull) {
-        val required = getRequiredStatusAndChecks(pull) ?: return
-
-        if (required.isEmpty()) {
-            removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
-            return
+        getRequiredStatusAndChecks(pull)?.let {
+            if (it.isEmpty()) {
+                removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            } else {
+                val statusCheck = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS)
+                val status = getStatusOrChecks<Status, StatusItem>(pull, SummaryType.STATUS)
+                when {
+                    statusCheck == null -> Unit
+                    status == null -> Unit
+                    else -> handleCompletedStatuses(pull, it, statusCheck, status)
+                }
+            }
         }
+    }
 
-        val statusCheck = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS) ?: return
-        val status = getStatusOrChecks<Status, StatusItem>(pull, SummaryType.STATUS) ?: return
-
+    private fun handleCompletedStatuses(
+        pull: Pull,
+        required: List<String>,
+        statusCheck: Map<String, StatusCheck>,
+        status: Map<String, StatusItem>
+    ) {
         val statusMap = required.map { nameToStatusState(it, statusCheck, status) }.toMap()
 
-        if (statusMap.values.all { it == StatusState.SUCCESS }) {
-            removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
-        } else if (statusMap.containsValue(StatusState.FAILURE)) {
-            removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
+        when {
+            statusMap.values.all { it == StatusState.SUCCESS } ->
+                removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            statusMap.containsValue(StatusState.FAILURE) -> removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
+            else -> Unit
         }
     }
 
@@ -109,6 +121,9 @@ class StatusService(private val config: GithubConfig) {
 
     /**
      * Get a mapping of the status names to the associated status or check
+     *
+     * @param statusOrCheck the status or check from github to map to status names
+     * @return a mapping of status names to the related status data
      */
     private inline fun <reified StatusOrCheck, reified StatusResponse> nameToStatusInfo(
         statusOrCheck: StatusOrCheck
