@@ -29,7 +29,6 @@ fun logFailure(result: Result.Failure<String, FuelError>, message: String = "Som
     logger.error { "${getStringifiedStackTrace(result.getException())}" }
 }
 
-
 private fun getStringifiedStackTrace(exception: Exception): String {
     val sw = StringWriter()
     exception.printStackTrace(PrintWriter(sw))

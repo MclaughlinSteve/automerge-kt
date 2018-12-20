@@ -35,15 +35,16 @@ class StatusService(private val config: GithubConfig) {
     }
 
     private fun handleCompletedStatuses(
-            pull: Pull,
-            required: List<String>,
-            statusCheck: Map<String, StatusCheck>,
-            status: Map<String, StatusItem>
+        pull: Pull,
+        required: List<String>,
+        statusCheck: Map<String, StatusCheck>,
+        status: Map<String, StatusItem>
     ) {
         val statusMap = required.map { nameToStatusState(it, statusCheck, status) }.toMap()
 
         when {
-            statusMap.values.all { it == StatusState.SUCCESS } -> removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
+            statusMap.values.all { it == StatusState.SUCCESS } ->
+                removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
             statusMap.containsValue(StatusState.FAILURE) -> removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
             else -> Unit
         }
