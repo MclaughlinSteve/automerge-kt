@@ -5,7 +5,7 @@
 [![ktlint](https://img.shields.io/badge/code%20style-%E2%9D%A4-FF4081.svg)](https://ktlint.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-# Github-automerge (Formerly: Automerge-kt)
+# Github-automerge
 
 Automatically update and merge all github pull requests (PRs) in the specified repos with the `Automerge` label from oldest to newest.
 
