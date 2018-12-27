@@ -55,7 +55,7 @@ class StatusService(private val config: GithubConfig) {
         statusCheck: Map<String, StatusCheck>,
         status: Map<String, StatusItem>
     ): StatusState {
-        return when(name) {
+        return when (name) {
             in statusCheck -> checkState(statusCheck.getValue(name))
             in status -> statusState(status.getValue(name))
             else -> StatusState.PENDING
