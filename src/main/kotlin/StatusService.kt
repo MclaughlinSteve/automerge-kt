@@ -40,7 +40,7 @@ class StatusService(private val config: GithubConfig) {
         statusCheck: Map<String, StatusCheck>,
         status: Map<String, StatusItem>
     ) {
-        val statusMap = required.map { nameToStatusState(it, statusCheck, status) }.toMap()
+        val statusMap = required.associate { nameToStatusState(it, statusCheck, status) }
 
         when {
             statusMap.values.all { it == StatusState.SUCCESS } ->
@@ -103,8 +103,8 @@ class StatusService(private val config: GithubConfig) {
         statusOrCheck: StatusOrCheck
     ): Map<String, StatusResponse>? =
         when (statusOrCheck) {
-            is Status -> statusOrCheck.statuses.map { it.context to it as StatusResponse }.toMap()
-            is Check -> statusOrCheck.checkRuns.map { it.name to it as StatusResponse }.toMap()
+            is Status -> statusOrCheck.statuses.associate { it.context to it as StatusResponse }
+            is Check -> statusOrCheck.checkRuns.associate { it.name to it as StatusResponse }
             else -> null
         }
 
