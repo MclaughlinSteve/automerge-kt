@@ -40,7 +40,7 @@ class StatusService(private val config: GithubConfig) {
         statusCheck: Map<String, StatusCheck>,
         status: Map<String, StatusItem>
     ) {
-        val statusMap = required.map { nameToStatusState(it, statusCheck, status) }.toMap()
+        val statusMap = required.associateWith { nameToStatusState(it, statusCheck, status) }
 
         when {
             statusMap.values.all { it == StatusState.SUCCESS } ->
@@ -54,8 +54,8 @@ class StatusService(private val config: GithubConfig) {
         name: String,
         statusCheck: Map<String, StatusCheck>,
         status: Map<String, StatusItem>
-    ): Pair<String, StatusState> {
-        return name to when (name) {
+    ): StatusState {
+        return when (name) {
             in statusCheck -> checkState(statusCheck.getValue(name))
             in status -> statusState(status.getValue(name))
             else -> StatusState.PENDING
@@ -103,8 +103,8 @@ class StatusService(private val config: GithubConfig) {
         statusOrCheck: StatusOrCheck
     ): Map<String, StatusResponse>? =
         when (statusOrCheck) {
-            is Status -> statusOrCheck.statuses.map { it.context to it as StatusResponse }.toMap()
-            is Check -> statusOrCheck.checkRuns.map { it.name to it as StatusResponse }.toMap()
+            is Status -> statusOrCheck.statuses.associateBy({ it.context }, { it as StatusResponse })
+            is Check -> statusOrCheck.checkRuns.associateBy({ it.name }, { it as StatusResponse })
             else -> null
         }
 
