@@ -9,6 +9,7 @@ enum class MergeState {
     BEHIND,
     BLOCKED,
     WAITING,
+    UNSTABLE,
     UNMERGEABLE,
     BAD
 }

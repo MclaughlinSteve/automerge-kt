@@ -38,6 +38,7 @@ class GithubService(private val config: GithubConfig) {
     private val priority = config.priority
     private val mergeType = config.mergeType
     private val http = Http(headers)
+    private val optionalStatuses = config.optionalStatuses
 
     /**
      * Return the oldest pull request with the specified automerge label.
@@ -99,7 +100,7 @@ class GithubService(private val config: GithubConfig) {
             "clean" -> MergeState.CLEAN
             "blocked" -> MergeState.BLOCKED
             "has_hooks" -> MergeState.WAITING
-            "unstable" -> MergeState.WAITING
+            "unstable" -> MergeState.UNSTABLE
             "unknown" -> MergeState.WAITING
             else -> MergeState.BAD
         }
@@ -155,6 +156,13 @@ class GithubService(private val config: GithubConfig) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> logger.info { "Successfully updating branch for PR: ${pull.title}" }
         }
+    }
+
+    fun removeLabelOrWait(pull: Pull) {
+        if (!optionalStatuses) {
+            return
+        }
+        // else, check if there are any failing statuses. If there are, remove label and comment, otherwise return
     }
 
     /**
