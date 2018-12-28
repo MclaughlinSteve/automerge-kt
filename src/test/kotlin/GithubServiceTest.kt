@@ -19,7 +19,7 @@ class GithubServiceTest {
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
     private val baseUrl = "http://foo.test/bar"
-    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers)
+    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers, false)
     private val service = GithubService(config)
     private val client = mockk<Client>()
 
