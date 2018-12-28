@@ -19,7 +19,7 @@ class GithubServiceTest {
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
     private val baseUrl = "http://foo.test/bar"
-    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers)
+    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers, false)
     private val service = GithubService(config)
     private val client = mockk<Client>()
 
@@ -101,7 +101,7 @@ class GithubServiceTest {
         fun `Pull request with unstable status returns waiting state`() {
             mockRequest(200, "OK", MergeStatus(1, true, "unstable"))
             val status = service.getReviewStatus(generateSamplePull(1))
-            assertThat(status).isEqualTo(MergeState.WAITING)
+            assertThat(status).isEqualTo(MergeState.UNSTABLE)
         }
 
         @Test
@@ -226,6 +226,75 @@ class GithubServiceTest {
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
             verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
+        }
+    }
+
+    @Nested
+    inner class RemoveLabelOrWait {
+        @Test
+        fun `Error getting statuses results in nothing happening`() {
+            val pull = generateSamplePull(200)
+            mockkConstructor(LabelService::class)
+            val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
+                    mapOf(
+                            statusUrl to MockResponse(404, "Not Found"),
+                            checksUrl to MockResponse(200, "OK", checkRuns)
+                    )
+            )
+            service.handleUnstableStatus(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
+
+            verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
+        }
+
+        @Test
+        fun `Error getting checks results in nothing happening`() {
+            val pull = generateSamplePull(200)
+            mockkConstructor(LabelService::class)
+            val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
+                    mapOf(
+                            statusUrl to MockResponse(200, "OK", status),
+                            checksUrl to MockResponse(404, "Not Found")
+                    )
+            )
+            service.handleUnstableStatus(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
+
+            verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
+        }
+
+        @Test
+        fun `Remove label if any statuses are failing`() {
+            val pull = generateSamplePull(200)
+            mockkConstructor(LabelService::class)
+            every {
+                anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
+            } returns Unit
+            val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
+            val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "failure")))
+            val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
+            val checksUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.CHECK_RUNS.route}"
+            val mockClient = mockRequests(
+                    mapOf(
+                            statusUrl to MockResponse(200, "OK", status),
+                            checksUrl to MockResponse(200, "OK", checkRuns)
+                    )
+            )
+            service.handleUnstableStatus(pull)
+            assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
+            assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
+
+            verify(exactly = 1) {
+                anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
+            }
         }
     }
 

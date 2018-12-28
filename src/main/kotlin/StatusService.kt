@@ -34,6 +34,27 @@ class StatusService(private val config: GithubConfig) {
         }
     }
 
+    /**
+     * Remove the label if there are any failing statuses or checks. If this function is called,
+     * it is likely an optional status that will be failing.
+     *
+     * @param pull the pull request to assess
+     */
+    fun removeLabelOrWait(pull: Pull) {
+        val checks = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS)
+        val status = getStatusOrChecks<Status, StatusItem>(pull, SummaryType.STATUS)
+        when {
+            checks == null -> Unit
+            status == null -> Unit
+            else ->
+                if (status.values.map { statusState(it) }.plus(checks.values.map { checkState(it) }).any(::failure)) {
+                    removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
+                }
+        }
+    }
+
+    private fun failure(status: StatusState) = status == StatusState.FAILURE
+
     private fun handleCompletedStatuses(
         pull: Pull,
         required: List<String>,

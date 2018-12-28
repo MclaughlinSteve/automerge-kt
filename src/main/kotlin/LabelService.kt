@@ -58,6 +58,7 @@ class LabelService(config: GithubConfig) {
             LabelRemovalReason.STATUS_CHECKS -> postComment(pull, LABEL_REMOVAL_STATUS_CHECKS)
             LabelRemovalReason.MERGE_CONFLICTS -> postComment(pull, LABEL_REMOVAL_MERGE_CONFLICTS)
             LabelRemovalReason.OUTSTANDING_REVIEWS -> postComment(pull, LABEL_REMOVAL_OUTSTANDING_REVIEWS)
+            LabelRemovalReason.OPTIONAL_CHECKS -> postComment(pull, LABEL_REMOVAL_OPTIONAL_CHECKS)
         }
     }
 

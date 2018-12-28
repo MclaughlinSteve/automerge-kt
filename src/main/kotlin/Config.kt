@@ -16,6 +16,7 @@ fun loadGithubConfig(): List<GithubConfig> {
     val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
     val priority = System.getenv("PRIORITY_LABEL") ?: "Priority Automerge"
     val mergeType = System.getenv("MERGE_TYPE") ?: "squash"
+    val optionalStatuses = System.getenv("OPTIONAL_STATUSES").toBoolean()
 
     listOf("squash", "merge", "rebase").any { it == mergeType } ||
             throw IllegalArgumentException("Bad MERGE_TYPE env variable")
@@ -30,7 +31,7 @@ fun loadGithubConfig(): List<GithubConfig> {
             "content-type" to "application/json")
 
     return repos.map {
-        GithubConfig(it, label, priority, mergeType, headers)
+        GithubConfig(it, label, priority, mergeType, headers, optionalStatuses)
     }
 }
 
@@ -48,7 +49,8 @@ data class GithubConfig(
     val label: String,
     val priority: String,
     val mergeType: String,
-    val headers: Map<String, String>
+    val headers: Map<String, String>,
+    val optionalStatuses: Boolean
 )
 
 /**
