@@ -101,7 +101,7 @@ class GithubServiceTest {
         fun `Pull request with unstable status returns waiting state`() {
             mockRequest(200, "OK", MergeStatus(1, true, "unstable"))
             val status = service.getReviewStatus(generateSamplePull(1))
-            assertThat(status).isEqualTo(MergeState.WAITING)
+            assertThat(status).isEqualTo(MergeState.UNSTABLE)
         }
 
         @Test
