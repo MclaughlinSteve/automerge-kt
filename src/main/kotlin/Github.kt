@@ -158,11 +158,16 @@ class GithubService(private val config: GithubConfig) {
         }
     }
 
+    /**
+     * Remove the label if there are any failing statuses or checks.
+     *
+     * @param pull the pull request to assess
+     */
     fun removeLabelOrWait(pull: Pull) {
         if (!optionalStatuses) {
             return
         }
-        // else, check if there are any failing statuses. If there are, remove label and comment, otherwise return
+        StatusService(config).removeLabelOrWait(pull)
     }
 
     /**

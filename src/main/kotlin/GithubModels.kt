@@ -29,6 +29,7 @@ enum class StatusState {
 enum class LabelRemovalReason {
     DEFAULT,
     STATUS_CHECKS,
+    OPTIONAL_CHECKS,
     MERGE_CONFLICTS,
     OUTSTANDING_REVIEWS
 }
