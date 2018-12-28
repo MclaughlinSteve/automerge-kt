@@ -46,11 +46,10 @@ class StatusService(private val config: GithubConfig) {
         when {
             checks == null -> Unit
             status == null -> Unit
-            else -> {
+            else ->
                 if (status.values.map { statusState(it) }.plus(checks.values.map { checkState(it) }).any(::failure)) {
                     removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
                 }
-            }
         }
     }
 
