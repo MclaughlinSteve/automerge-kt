@@ -159,15 +159,17 @@ class GithubService(private val config: GithubConfig) {
     }
 
     /**
-     * Remove the label if there are any failing statuses or checks.
+     * If environment variable is set, merge the pull request; Otherwise, remove the label if there are any
+     * failing statuses or checks or keep waiting.
      *
      * @param pull the pull request to assess
      */
-    fun removeLabelOrWait(pull: Pull) {
-        if (!optionalStatuses) {
-            return
+    fun handleUnstableStatus(pull: Pull) {
+        if (optionalStatuses) {
+            merge(pull)
+        } else {
+            StatusService(config).removeLabelOrWait(pull)
         }
-        StatusService(config).removeLabelOrWait(pull)
     }
 
     /**

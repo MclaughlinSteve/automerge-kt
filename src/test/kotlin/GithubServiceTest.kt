@@ -19,7 +19,7 @@ class GithubServiceTest {
             "accept" to "application/vnd.github.v3+json, application/vnd.github.antiope-preview+json",
             "content-type" to "application/json")
     private val baseUrl = "http://foo.test/bar"
-    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers, true)
+    private val config = GithubConfig(baseUrl, "Automerge", "Priority Automerge", "squash", headers, false)
     private val service = GithubService(config)
     private val client = mockk<Client>()
 
@@ -244,7 +244,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(200, "OK", checkRuns)
                     )
             )
-            service.removeLabelOrWait(pull)
+            service.handleUnstableStatus(pull)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -264,7 +264,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(404, "Not Found")
                     )
             )
-            service.removeLabelOrWait(pull)
+            service.handleUnstableStatus(pull)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -288,7 +288,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(200, "OK", checkRuns)
                     )
             )
-            service.removeLabelOrWait(pull)
+            service.handleUnstableStatus(pull)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
