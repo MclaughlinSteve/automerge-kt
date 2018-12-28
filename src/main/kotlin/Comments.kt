@@ -18,7 +18,7 @@ It seems likely that this is due to a cancelled or failing status check. Take a 
 const val LABEL_REMOVAL_OPTIONAL_CHECKS = """
 Uh oh! It looks like there was a problem trying to automerge this pull request.
 
-It seems likely that this is due to a cancelled or failing optional status check. Take a look at your statuses and
+It seems likely that this is due to a cancelled or failing non-required status check. Take a look at your statuses and
  get them passing before reapplying the automerge label.
 
 Alternatively, you can set the `OPTIONAL_STATUSES` environment variable to true to ignore optional statuses
