@@ -23,7 +23,7 @@ take precedence in the merge order.
  and "rebase"). This will determine the type of merge that is performed when merging pull requests. By default, "squash" 
  will be used
  
-(Optional) Set the `OPTIONAL_STATUSES` environment variable to `true` if you want to have the bot merge your pull requests
+(Optional) Set the `IGNORE_OPTIONAL_STATUSES` environment variable to `true` if you want to have the bot merge your pull requests
 in the event of a failing optional status. If unspecified, the bot will remove the label and leave a comment.
 
 Replace the repository url in the [config.yml](src/main/resources/config.yml) with the information relative to your 

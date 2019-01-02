@@ -16,7 +16,7 @@ fun loadGithubConfig(): List<GithubConfig> {
     val label = System.getenv("AUTOMERGE_LABEL") ?: "Automerge"
     val priority = System.getenv("PRIORITY_LABEL") ?: "Priority Automerge"
     val mergeType = System.getenv("MERGE_TYPE") ?: "squash"
-    val optionalStatuses = System.getenv("OPTIONAL_STATUSES").toBoolean()
+    val optionalStatuses = System.getenv("IGNORE_OPTIONAL_STATUSES")?.toBoolean() ?: false
 
     listOf("squash", "merge", "rebase").any { it == mergeType } ||
             throw IllegalArgumentException("Bad MERGE_TYPE env variable")
