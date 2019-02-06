@@ -18,7 +18,6 @@ class LabelService(config: GithubConfig) {
      *
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR
-     * @return true if the program should continue running after executing this function
      */
     fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
         val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS"
