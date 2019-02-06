@@ -114,6 +114,7 @@ class GithubService(private val config: GithubConfig) {
      * and then deleting the branch afterward
      *
      * @param pull the pull request to be merged
+     * @return true if the program should continue running after executing this function
      */
     fun merge(pull: Pull) {
         val url = "$baseUrl/$PULLS/${pull.number}/$MERGE"
@@ -147,6 +148,7 @@ class GithubService(private val config: GithubConfig) {
      * This is essentially hitting the "update branch" button on the github ui
      *
      * @param pull the pull request that contains the current branch and the branch being merged into
+     * @return true if the program should continue running after executing this function
      */
     fun updateBranch(pull: Pull) {
         val url = "$baseUrl/$MERGES"
@@ -163,6 +165,7 @@ class GithubService(private val config: GithubConfig) {
      * failing statuses or checks or keep waiting.
      *
      * @param pull the pull request to assess
+     * @return true if the program should continue running after executing this function
      */
     fun handleUnstableStatus(pull: Pull) {
         if (optionalStatuses) {
@@ -180,6 +183,7 @@ class GithubService(private val config: GithubConfig) {
      * be removed
      *
      * @param pull the pull request for which the statuses are being determined
+     * @return true if the program should continue running after executing this function
      */
     fun assessStatusAndChecks(pull: Pull) = StatusService(config).assessStatusAndChecks(pull)
 
@@ -188,6 +192,7 @@ class GithubService(private val config: GithubConfig) {
      *
      * @param pull the pull request for which the label will be removed
      * @param reason some information about why the label is removed which will be commented on the PR
+     * @return true if the program should continue running after executing this function
      */
     fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) =
             LabelService(config).removeLabels(pull, reason)
