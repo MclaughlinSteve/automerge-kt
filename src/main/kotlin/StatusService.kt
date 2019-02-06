@@ -18,16 +18,16 @@ class StatusService(private val config: GithubConfig) {
      *
      * @param pull the pull request for which the statuses are being determined
      */
-    fun assessStatusAndChecks(pull: Pull) {
+    fun assessStatusAndChecks(pull: Pull): Boolean {
         getRequiredStatusAndChecks(pull)?.let {
-            if (it.isEmpty()) {
+            return if (it.isEmpty()) {
                 removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
             } else {
                 val statusCheck = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS)
                 val status = getStatusOrChecks<Status, StatusItem>(pull, SummaryType.STATUS)
                 when {
-                    statusCheck == null -> Unit
-                    status == null -> Unit
+                    statusCheck == null -> false
+                    status == null -> false
                     else -> handleCompletedStatuses(pull, it, statusCheck, status)
                 }
             }
@@ -40,15 +40,17 @@ class StatusService(private val config: GithubConfig) {
      *
      * @param pull the pull request to assess
      */
-    fun removeLabelOrWait(pull: Pull) {
+    fun removeLabelOrWait(pull: Pull): Boolean {
         val checks = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS)
         val status = getStatusOrChecks<Status, StatusItem>(pull, SummaryType.STATUS)
-        when {
-            checks == null -> Unit
-            status == null -> Unit
+        return when {
+            checks == null -> false
+            status == null -> false
             else ->
-                if (status.values.map { statusState(it) }.plus(checks.values.map { checkState(it) }).any(::failure)) {
+                return if (status.values.map { statusState(it) }.plus(checks.values.map { checkState(it) }).any(::failure)) {
                     removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
+                } else {
+                    false
                 }
         }
     }
@@ -60,14 +62,14 @@ class StatusService(private val config: GithubConfig) {
         required: List<String>,
         statusCheck: Map<String, StatusCheck>,
         status: Map<String, StatusItem>
-    ) {
+    ): Boolean {
         val statusMap = required.associateWith { nameToStatusState(it, statusCheck, status) }
 
-        when {
+        return when {
             statusMap.values.all { it == StatusState.SUCCESS } ->
                 removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
             statusMap.containsValue(StatusState.FAILURE) -> removeLabels(pull, LabelRemovalReason.STATUS_CHECKS)
-            else -> Unit
+            else -> false
         }
     }
 

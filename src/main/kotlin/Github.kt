@@ -115,7 +115,7 @@ class GithubService(private val config: GithubConfig) {
      *
      * @param pull the pull request to be merged
      */
-    fun merge(pull: Pull) {
+    fun merge(pull: Pull): Boolean {
         val url = "$baseUrl/$PULLS/${pull.number}/$MERGE"
         val body = CommitBody(pull.title, mergeType)
         val (request, _, result) = http.put(url, body)
@@ -130,6 +130,7 @@ class GithubService(private val config: GithubConfig) {
                 deleteBranch(pull)
             }
         }
+        return true
     }
 
     private fun deleteBranch(pull: Pull) {
@@ -148,7 +149,7 @@ class GithubService(private val config: GithubConfig) {
      *
      * @param pull the pull request that contains the current branch and the branch being merged into
      */
-    fun updateBranch(pull: Pull) {
+    fun updateBranch(pull: Pull): Boolean {
         val url = "$baseUrl/$MERGES"
         val body = UpdateBody(pull.base.ref, pull.head.ref)
         val (_, _, result) = http.post(url, body)
@@ -156,6 +157,7 @@ class GithubService(private val config: GithubConfig) {
             is Result.Failure -> logFailure(result)
             is Result.Success -> logger.info { "Successfully updating branch for PR: ${pull.title}" }
         }
+        return false
     }
 
     /**
@@ -164,8 +166,8 @@ class GithubService(private val config: GithubConfig) {
      *
      * @param pull the pull request to assess
      */
-    fun handleUnstableStatus(pull: Pull) {
-        if (optionalStatuses) {
+    fun handleUnstableStatus(pull: Pull): Boolean {
+        return if (optionalStatuses) {
             merge(pull)
         } else {
             StatusService(config).removeLabelOrWait(pull)
