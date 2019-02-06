@@ -133,7 +133,7 @@ class GithubServiceTest {
             val pull = generateSamplePull(100)
             mockkConstructor(LabelService::class)
             every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
-                    Unit
+                    true
             mockRequest(200, "OK", BranchDetails("foo", false, Protection(false, RequiredStatusChecks(emptyList()))))
 
             service.assessStatusAndChecks(pull)
@@ -157,7 +157,7 @@ class GithubServiceTest {
             val pull = generateSamplePull(102)
             mockkConstructor(LabelService::class)
             every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
-                    Unit
+                    true
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("success", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -181,7 +181,7 @@ class GithubServiceTest {
         fun `PR is blocked and at least one status is failing causes label to be removed`() {
             val pull = generateSamplePull(103)
             mockkConstructor(LabelService::class)
-            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns Unit
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns true
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("failure", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -277,7 +277,7 @@ class GithubServiceTest {
             mockkConstructor(LabelService::class)
             every {
                 anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
-            } returns Unit
+            } returns true
             val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "failure")))
             val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
