@@ -17,6 +17,7 @@ class StatusService(private val config: GithubConfig) {
      * be removed
      *
      * @param pull the pull request for which the statuses are being determined
+     * @return true if the program should continue running after executing this function
      */
     fun assessStatusAndChecks(pull: Pull): Boolean {
         getRequiredStatusAndChecks(pull)?.let {
@@ -39,6 +40,7 @@ class StatusService(private val config: GithubConfig) {
      * it is likely an optional status that will be failing.
      *
      * @param pull the pull request to assess
+     * @return true if the program should continue running after executing this function
      */
     fun removeLabelOrWait(pull: Pull): Boolean {
         val checks = getStatusOrChecks<Check, StatusCheck>(pull, SummaryType.CHECK_RUNS)
