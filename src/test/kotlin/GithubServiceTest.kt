@@ -136,7 +136,7 @@ class GithubServiceTest {
                     true
             mockRequest(200, "OK", BranchDetails("foo", false, Protection(false, RequiredStatusChecks(emptyList()))))
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(true)
             verify(exactly = 1) {
                 anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
             }
@@ -147,7 +147,7 @@ class GithubServiceTest {
             val pull = generateSamplePull(101)
             mockkConstructor(LabelService::class)
             mockRequest(404, "Not Found")
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(false)
 
             verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
         }
@@ -170,7 +170,7 @@ class GithubServiceTest {
                     )
             )
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(true)
 
             verify(exactly = 1) {
                 anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
@@ -196,7 +196,7 @@ class GithubServiceTest {
                     )
             )
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(true)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -221,7 +221,7 @@ class GithubServiceTest {
                     )
             )
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(false)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -244,7 +244,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(200, "OK", checkRuns)
                     )
             )
-            service.handleUnstableStatus(pull)
+            assertThat(service.handleUnstableStatus(pull)).isEqualTo(false)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -264,7 +264,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(404, "Not Found")
                     )
             )
-            service.handleUnstableStatus(pull)
+            assertThat(service.handleUnstableStatus(pull)).isEqualTo(false)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -288,7 +288,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(200, "OK", checkRuns)
                     )
             )
-            service.handleUnstableStatus(pull)
+            assertThat(service.handleUnstableStatus(pull)).isEqualTo(true)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
