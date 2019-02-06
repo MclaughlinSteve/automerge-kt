@@ -47,8 +47,8 @@ private fun executeAutomerge(service: GithubService) {
 }
 
 private fun performAction(service: GithubService, pull: Pull?): Boolean {
-    val reviewStatus: MergeState? = pull?.let { service.getReviewStatus(pull) }
-    return reviewStatus?.let { return handleStatus(reviewStatus, pull, service) } ?: false
+    val reviewStatus: MergeState = pull?.let { service.getReviewStatus(pull) } ?: return false
+    return handleStatus(reviewStatus, pull, service)
 }
 
 private fun handleStatus(reviewStatus: MergeState, pull: Pull, service: GithubService): Boolean {
