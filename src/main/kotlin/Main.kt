@@ -40,19 +40,26 @@ private fun launchAutomerger(services: List<GithubService>) {
 }
 
 private fun executeAutomerge(service: GithubService) {
-    val pull = service.getOldestLabeledRequest()
-    val reviewStatus: MergeState? = pull?.let { service.getReviewStatus(pull) }
+    do {
+        val pull = service.getOldestLabeledRequest()
+        val shouldContinue = performAction(service, pull)
+    } while (shouldContinue)
+}
 
-    reviewStatus?.let {
-        logger.info { "Status is $reviewStatus" }
-        when (reviewStatus) {
-            MergeState.CLEAN -> service.merge(pull)
-            MergeState.BEHIND -> service.updateBranch(pull)
-            MergeState.BLOCKED -> service.assessStatusAndChecks(pull)
-            MergeState.UNMERGEABLE -> service.removeLabels(pull, LabelRemovalReason.MERGE_CONFLICTS)
-            MergeState.BAD -> service.removeLabels(pull)
-            MergeState.UNSTABLE -> service.handleUnstableStatus(pull)
-            MergeState.WAITING -> Unit // Do nothing
-        }
+private fun performAction(service: GithubService, pull: Pull?): Boolean {
+    val reviewStatus: MergeState = pull?.let { service.getReviewStatus(pull) } ?: return false
+    return handleStatus(reviewStatus, pull, service)
+}
+
+private fun handleStatus(reviewStatus: MergeState, pull: Pull, service: GithubService): Boolean {
+    logger.info { "Status is $reviewStatus" }
+    return when (reviewStatus) {
+        MergeState.CLEAN -> service.merge(pull)
+        MergeState.BEHIND -> service.updateBranch(pull)
+        MergeState.BLOCKED -> service.assessStatusAndChecks(pull)
+        MergeState.UNMERGEABLE -> service.removeLabels(pull, LabelRemovalReason.MERGE_CONFLICTS)
+        MergeState.BAD -> service.removeLabels(pull)
+        MergeState.UNSTABLE -> service.handleUnstableStatus(pull)
+        MergeState.WAITING -> false
     }
 }
