@@ -129,7 +129,7 @@ class GithubService(private val config: GithubConfig) {
             is Result.Success -> {
                 logger.info { "Successfully merged ${pull.title}!" }
                 deleteBranch(pull)
-                Thread.sleep(200)
+                Thread.sleep(500)
             }
         }
         return true
