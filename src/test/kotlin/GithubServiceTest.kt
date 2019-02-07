@@ -133,10 +133,10 @@ class GithubServiceTest {
             val pull = generateSamplePull(100)
             mockkConstructor(LabelService::class)
             every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
-                    Unit
+                    true
             mockRequest(200, "OK", BranchDetails("foo", false, Protection(false, RequiredStatusChecks(emptyList()))))
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(true)
             verify(exactly = 1) {
                 anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
             }
@@ -147,7 +147,7 @@ class GithubServiceTest {
             val pull = generateSamplePull(101)
             mockkConstructor(LabelService::class)
             mockRequest(404, "Not Found")
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(false)
 
             verify(exactly = 0) { anyConstructed<LabelService>().removeLabels(pull, any()) }
         }
@@ -157,7 +157,7 @@ class GithubServiceTest {
             val pull = generateSamplePull(102)
             mockkConstructor(LabelService::class)
             every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS) } returns
-                    Unit
+                    true
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("success", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -170,7 +170,7 @@ class GithubServiceTest {
                     )
             )
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(true)
 
             verify(exactly = 1) {
                 anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OUTSTANDING_REVIEWS)
@@ -181,7 +181,7 @@ class GithubServiceTest {
         fun `PR is blocked and at least one status is failing causes label to be removed`() {
             val pull = generateSamplePull(103)
             mockkConstructor(LabelService::class)
-            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns Unit
+            every { anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.STATUS_CHECKS) } returns true
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "success")))
             val status = Status("Success", 1, listOf(StatusItem("failure", null, "Status - Check")))
             val statusChecks = listOf("Foo - CI", "Status - Check")
@@ -196,7 +196,7 @@ class GithubServiceTest {
                     )
             )
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(true)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -221,7 +221,7 @@ class GithubServiceTest {
                     )
             )
 
-            service.assessStatusAndChecks(pull)
+            assertThat(service.assessStatusAndChecks(pull)).isEqualTo(false)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -244,7 +244,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(200, "OK", checkRuns)
                     )
             )
-            service.handleUnstableStatus(pull)
+            assertThat(service.handleUnstableStatus(pull)).isEqualTo(false)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -264,7 +264,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(404, "Not Found")
                     )
             )
-            service.handleUnstableStatus(pull)
+            assertThat(service.handleUnstableStatus(pull)).isEqualTo(false)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 
@@ -277,7 +277,7 @@ class GithubServiceTest {
             mockkConstructor(LabelService::class)
             every {
                 anyConstructed<LabelService>().removeLabels(pull, LabelRemovalReason.OPTIONAL_CHECKS)
-            } returns Unit
+            } returns true
             val status = Status("Success", 1, listOf(StatusItem("pending", null, "Status - Check")))
             val checkRuns = Check(1, listOf(StatusCheck("completed", "Foo - CI", "failure")))
             val statusUrl = "$baseUrl/$COMMITS/${pull.head.sha}/${SummaryType.STATUS.route}"
@@ -288,7 +288,7 @@ class GithubServiceTest {
                             checksUrl to MockResponse(200, "OK", checkRuns)
                     )
             )
-            service.handleUnstableStatus(pull)
+            assertThat(service.handleUnstableStatus(pull)).isEqualTo(true)
             assertThat(mockClient.getNumberOfCalls(checksUrl)).isEqualTo(1)
             assertThat(mockClient.getNumberOfCalls(statusUrl)).isEqualTo(1)
 

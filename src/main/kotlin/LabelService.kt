@@ -20,7 +20,7 @@ class LabelService(config: GithubConfig) {
      * @param reason some information about why the label is removed which will be commented on the PR
      * @return true if the program should continue running after executing this function
      */
-    fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT) {
+    fun removeLabels(pull: Pull, reason: LabelRemovalReason = LabelRemovalReason.DEFAULT): Boolean {
         val url = "$baseUrl/$ISSUES/${pull.number}/$LABELS"
         val (_, _, result) = http.get(url)
         when (result) {
@@ -33,6 +33,7 @@ class LabelService(config: GithubConfig) {
                 }
             }
         }
+        return true
     }
 
     private fun removeLabelIfExists(labels: List<Label>, pull: Pull, labelName: String) =
