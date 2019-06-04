@@ -123,7 +123,7 @@ class GithubService(private val config: GithubConfig) {
         when (result) {
             is Result.Failure -> {
                 logger.error { "Failed to merge $request" }
-                logger.error { "Response was $response"}
+                logger.error { "Response was $response" }
                 removeLabels(pull)
                 logFailure(result)
             }
