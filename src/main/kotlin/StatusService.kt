@@ -33,6 +33,7 @@ class StatusService(private val config: GithubConfig) {
                 }
             }
         }
+        return false
     }
 
     /**
