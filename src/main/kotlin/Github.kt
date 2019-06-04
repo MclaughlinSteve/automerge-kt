@@ -119,10 +119,11 @@ class GithubService(private val config: GithubConfig) {
     fun merge(pull: Pull): Boolean {
         val url = "$baseUrl/$PULLS/${pull.number}/$MERGE"
         val body = CommitBody(pull.title, mergeType)
-        val (request, _, result) = http.put(url, body)
+        val (request, response, result) = http.put(url, body)
         when (result) {
             is Result.Failure -> {
                 logger.error { "Failed to merge $request" }
+                logger.error { "Response was $response" }
                 removeLabels(pull)
                 logFailure(result)
             }
